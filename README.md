@@ -1,2 +1,2 @@
-# optim_torch
+# optim
 Collection of popular optimization algorithms in PyTorch. 
