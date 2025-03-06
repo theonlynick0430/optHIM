@@ -33,6 +33,7 @@ class QuadraticFunction(torch.autograd.Function):
             grad_c: None
             grad_x: vector of shape (n,)
         """
+        # custom gradient for symmetric A
         A, b, x = ctx.saved_tensors
         grad_x = torch.einsum('ij,j->i', A, x) + b
         grad_x *= grad_output

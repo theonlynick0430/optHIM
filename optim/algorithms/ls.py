@@ -1,8 +1,9 @@
 import torch
 
-def backtracking_ls(p, d, loss_cl, alpha=1.0, tau=0.5, c1=1e-4, min_alpha=1e-10):
+
+def armijo(p, d, loss_cl, alpha=1.0, tau=0.5, c1=1e-4, min_alpha=1e-10):
     """
-    Performs backtracking line search to find an acceptable step size.
+    Performs armijo backtracking line search to find an acceptable step size.
     
     Args:
         p (torch.Tensor): parameter tensor to be updated
