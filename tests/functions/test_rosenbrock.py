@@ -1,5 +1,5 @@
-import torch
 import pytest
+import torch
 from optim.functions.rosenbrock import Rosenbrock
 
 

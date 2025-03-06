@@ -1,6 +1,6 @@
-import torch
 from torch.optim.optimizer import Optimizer
 import optim.algorithms.ls as ls
+
 
 class GD(Optimizer):
     def __init__(self, params, step_type='constant', step_size=1e-3, 
@@ -17,7 +17,7 @@ class GD(Optimizer):
             c1 (float, optional): sufficient decrease parameter for 'armijo' step type
         
         Example:
-            >>> optimizer = GD(model.parameters(), step_type='Constant', step_size=0.1)
+            >>> optimizer = GD(model.parameters(), step_type='constant', step_size=0.1)
             >>> optimizer.zero_grad()
             >>> loss_fn(model(input), target).backward()
             >>> optimizer.step()

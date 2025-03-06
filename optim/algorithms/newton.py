@@ -1,15 +1,18 @@
 import torch
 from torch.optim.optimizer import Optimizer
+from torch.autograd.functional import hessian
 import optim.algorithms.ls as ls
 
+
 class Newton(Optimizer):
-    def __init__(self, params, step_type='constant', step_size=1.0, 
+    def __init__(self, params, model, step_type='constant', step_size=1.0, 
                  alpha=1.0, tau=0.5, c1=1e-4):
         """Implements Newton's method with constant step size or backtracking line search.
         
-        Inputs:
+        Args:
             params (iterable): iterable of parameters to optimize or dicts defining
                 parameter groups
+            model (nn.Module): model used to compute Hessian
             step_type (str): type of step size to use ('constant' or 'armijo')
             step_size (float, optional): constant step size for 'constant' step type
             alpha (float, optional): initial step size for 'armijo' step type
@@ -17,7 +20,7 @@ class Newton(Optimizer):
             c1 (float, optional): sufficient decrease parameter for 'armijo' step type
         
         Example:
-            >>> optimizer = Newton(model.parameters(), step_type='Constant', step_size=1.0)
+            >>> optimizer = Newton(model.parameters(), step_type='constant', step_size=1.0)
             >>> optimizer.zero_grad()
             >>> loss_fn(model(input), target).backward()
             >>> optimizer.step(hess_cl=lambda: compute_hessian(model, input))
@@ -26,14 +29,13 @@ class Newton(Optimizer):
             raise ValueError(f"step_type must be 'constant' or 'armijo', got {step_type}")
         defaults = dict(step_type=step_type, step_size=step_size,
                         alpha=alpha, tau=tau, c1=c1)
+        self.model = model
         super(Newton, self).__init__(params, defaults)
 
-    def step(self, hess_cl, loss_cl=None):
+    def step(self, loss_cl=None):
         """Performs a single optimization step.
         
         Args:
-            hess_cl (callable): closure that reevaluates the model
-                and returns the Hessian matrix  
             loss_cl (callable, optional): closure that reevaluates the model
                 and returns the loss. Required for backtracking line search.
         """
@@ -46,7 +48,7 @@ class Newton(Optimizer):
                 
                 # set search direction
                 d_p = p.grad.data
-                H = hess_cl()
+                H = hessian(self.model, p.data)
                 d = -torch.linalg.pinv(H) @ d_p
                 
                 if step_type == 'constant':
