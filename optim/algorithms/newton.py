@@ -29,43 +29,16 @@ class Newton(Optimizer):
                         alpha=alpha, tau=tau, c1=c1)
         super(Newton, self).__init__(params, defaults)
         
-        # Store model reference for Hessian computation
-        self.model = None
-
     def __setstate__(self, state):
         super(Newton, self).__setstate__(state)
 
-    def set_model(self, model):
-        """Set the model for Hessian computation.
-        
-        Inputs:
-            model: PyTorch model
-        """
-        self.model = model
-
-    def compute_hessian(self, p):
-        """Compute the Hessian matrix at point p using autograd.
-        
-        Inputs:
-            p: Parameter tensor
-            
-        Outputs:
-            H: Hessian matrix
-        """
-        if self.model is None:
-            raise ValueError("Model not set. Call set_model first.")
-            
-        # Use PyTorch's functional Hessian
-        def func(x):
-            return self.model(x.view_as(p))
-        
-        return F.hessian(func, p.data.flatten()).view(p.numel(), p.numel())
-
-    def step(self, closure=None):
+    def step(self, hess_cl, loss_cl=None):
         """Performs a single optimization step.
         
         Inputs:
-            closure (callable, optional): A closure that reevaluates the model
+            hess_cl (callable): A closure that reevaluates the model
+                and returns the Hessian matrix
+            loss_cl (callable, optional): A closure that reevaluates the model
                 and returns the loss. Required for backtracking line search.
         """
         for group in self.param_groups:
@@ -75,23 +48,10 @@ class Newton(Optimizer):
                 if p.grad is None:
                     continue
                 
-                # Get gradient
+                # set search direction
                 d_p = p.grad.data
-                
-                # Compute Hessian if model is set
-                if self.model is not None:
-                    try:
-                        # Compute Hessian
-                        H = self.compute_hessian(p)
-                        
-                        # Compute Newton direction by solving H*d = -g
-                        d = -torch.linalg.solve(H, d_p.flatten()).view_as(p)
-                    except:
-                        # Fallback to gradient descent if Hessian is singular
-                        d = -d_p
-                else:
-                    # Fallback to gradient descent if model is not set
-                    d = -d_p
+                H = hess_cl()
+                d = -torch.linalg.pinv(H) @ d_p
                 
                 # Determine step size based on step_type
                 if step_type == 'Constant':

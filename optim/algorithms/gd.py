@@ -1,12 +1,13 @@
 import torch
 from torch.optim.optimizer import Optimizer
+from optim.algorithms.ls import backtracking_ls
 
 class GD(Optimizer):
     def __init__(self, params, step_type='Constant', step_size=1e-3, 
                  alpha=1.0, tau=0.5, c1=1e-4):
         """Implements gradient descent with constant step size or backtracking line search.
         
-        Inputs:
+        Args:
             params (iterable): iterable of parameters to optimize or dicts defining
                 parameter groups
             step_type (str): type of step size to use ('Constant' or 'Backtracking')
@@ -30,11 +31,11 @@ class GD(Optimizer):
     def __setstate__(self, state):
         super(GD, self).__setstate__(state)
 
-    def step(self, closure=None):
+    def step(self, loss_cl=None):
         """Performs a single optimization step.
         
-        Inputs:
-            closure (callable, optional): A closure that reevaluates the model
+        Args:
+            loss_cl (callable, optional): closure that reevaluates the model
                 and returns the loss. Required for backtracking line search.
         """
         for group in self.param_groups:
@@ -53,37 +54,10 @@ class GD(Optimizer):
                     p.data += alpha * d
                 
                 elif step_type == 'Backtracking':
+                    if loss_cl is None:
+                        raise ValueError("loss_cl must be provided for backtracking line search")
+                    
                     alpha = group['alpha']
                     tau = group['tau']
                     c1 = group['c1']
-                    
-                    # initial parameter and gradient
-                    p0 = p.data.clone()
-                    d_p0 = d_p.clone()
-                    
-                    if closure is not None:
-                        # compute initial loss if closure is provided
-                        loss0 = closure()
-                    else:
-                        # if no closure provided, we can't do backtracking line search
-                        p.data += alpha * d
-                        continue
-                    
-                    # backtracking line search
-                    while True:
-                        # update parameter with current step size
-                        p.data = p0 + alpha * d
-                                        
-                        # check armijo condition
-                        armijo_rhs = loss0 + c1 * alpha * torch.dot(d_p0.view(-1), d.view(-1))
-                        loss = closure()
-                        if loss <= armijo_rhs:
-                            break
-                        
-                        # reduce step size
-                        alpha = tau * alpha
-                        
-                        # safety check to prevent infinite loop
-                        if alpha < 1e-10:
-                            p.data = p0  # revert to original parameters
-                            break
+                    backtracking_ls(p, d, loss_cl, alpha, tau, c1)

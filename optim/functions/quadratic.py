@@ -8,12 +8,12 @@ class QuadraticFunction(torch.autograd.Function):
         """
         Compute the forward pass of the quadratic function.
 
-        Inputs:
+        Args:
             A: symmetric matrix of shape (n,n)
             b: vector of shape (n,1)
             c: scalar
             x: vector of shape (n,1)
-        Outputs:
+        Returns:
             f: scalar
         """
         ctx.save_for_backward(A, b, x)
@@ -25,10 +25,10 @@ class QuadraticFunction(torch.autograd.Function):
         """
         Compute the backward pass of the quadratic function.
 
-        Inputs:
+        Args:
             ctx: context object
             grad_output: scalar incoming gradient
-        Outputs:
+        Returns:
             grad_A: None
             grad_b: None
             grad_c: None
@@ -46,7 +46,7 @@ class Quadratic(nn.Module):
         Initialize the Quadratic function:
         f(x) = 0.5 * x^T A x + b^T x + c
 
-        Inputs:
+        Args:
             A: symmetric matrix of shape (n,n)
             b: vector of shape (n,1)
             c: scalar
@@ -60,9 +60,9 @@ class Quadratic(nn.Module):
         """
         Compute the function value.
 
-        Inputs:
+        Args:
             x: vector of shape (n,1)
-        Outputs:
+        Returns:
             f: scalar
         """
         return QuadraticFunction.apply(self.A, self.b, self.c, x)
