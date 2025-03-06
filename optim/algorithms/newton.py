@@ -1,7 +1,6 @@
 import torch
 from torch.optim.optimizer import Optimizer
-import torch.autograd.functional as F
-import numpy as np
+from optim.algorithms.ls import backtracking_ls
 
 class Newton(Optimizer):
     def __init__(self, params, step_type='Constant', step_size=1.0, 
@@ -21,24 +20,21 @@ class Newton(Optimizer):
             >>> optimizer = Newton(model.parameters(), step_type='Constant', step_size=1.0)
             >>> optimizer.zero_grad()
             >>> loss_fn(model(input), target).backward()
-            >>> optimizer.step(closure=lambda: loss_fn(model(input), target))
+            >>> optimizer.step(hess_cl=lambda: compute_hessian(model, input))
         """
         if step_type not in ['Constant', 'Backtracking']:
             raise ValueError(f"step_type must be 'Constant' or 'Backtracking', got {step_type}")
         defaults = dict(step_type=step_type, step_size=step_size,
                         alpha=alpha, tau=tau, c1=c1)
         super(Newton, self).__init__(params, defaults)
-        
-    def __setstate__(self, state):
-        super(Newton, self).__setstate__(state)
 
     def step(self, hess_cl, loss_cl=None):
         """Performs a single optimization step.
         
-        Inputs:
-            hess_cl (callable): A closure that reevaluates the model
-                and returns the Hessian matrix
-            loss_cl (callable, optional): A closure that reevaluates the model
+        Args:
+            hess_cl (callable): closure that reevaluates the model
+                and returns the Hessian matrix  
+            loss_cl (callable, optional): closure that reevaluates the model
                 and returns the loss. Required for backtracking line search.
         """
         for group in self.param_groups:
@@ -53,43 +49,15 @@ class Newton(Optimizer):
                 H = hess_cl()
                 d = -torch.linalg.pinv(H) @ d_p
                 
-                # Determine step size based on step_type
                 if step_type == 'Constant':
                     alpha = group['step_size']
-                    p.data.add_(alpha, d)
+                    p.data += alpha * d
                 
                 elif step_type == 'Backtracking':
+                    if loss_cl is None:
+                        raise ValueError("loss_cl must be provided for backtracking line search")
+                    
                     alpha = group['alpha']
                     tau = group['tau']
                     c1 = group['c1']
-                    
-                    # Initial parameter and gradient
-                    p0 = p.data.clone()
-                    d_p0 = d_p.clone()
-                    
-                    if closure is not None:
-                        # Compute initial loss if closure is provided
-                        loss0 = closure()
-                    else:
-                        # If no closure provided, we can't do backtracking line search
-                        p.data.add_(alpha, d)
-                        continue
-                    
-                    # Backtracking line search
-                    while True:
-                        # Update parameter with current step size
-                        p.data = p0 + alpha * d
-                                                
-                        # Check Armijo condition
-                        armijo_rhs = loss0 + c1 * alpha * torch.dot(d_p0.view(-1), d.view(-1))
-                        loss = closure()
-                        if loss <= armijo_rhs:
-                            break
-                        
-                        # Reduce step size
-                        alpha = tau * alpha
-                        
-                        # Safety check to prevent infinite loop
-                        if alpha < 1e-10:
-                            p.data = p0  # Revert to original parameters
-                            break 
+                    backtracking_ls(p, d, loss_cl, alpha, tau, c1) 

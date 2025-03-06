@@ -20,7 +20,7 @@ class GD(Optimizer):
             >>> optimizer = GD(model.parameters(), step_type='Constant', step_size=0.1)
             >>> optimizer.zero_grad()
             >>> loss_fn(model(input), target).backward()
-            >>> optimizer.step(closure=lambda: loss_fn(model(input), target))
+            >>> optimizer.step()
         """
         if step_type not in ['Constant', 'Backtracking']:
             raise ValueError(f"step_type must be 'Constant' or 'Backtracking', got {step_type}")

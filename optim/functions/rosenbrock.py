@@ -9,12 +9,12 @@ class RosenbrockFunction(torch.autograd.Function):
         Compute the forward pass of the Rosenbrock function.
 
         Args:
-            x: vector of shape (2,1)
+            x: vector of shape (2,)
         Returns:
             f: scalar
         """
         ctx.save_for_backward(x)
-        return (1 - x[0,0]) ** 2 + 100 * (x[1,0] - x[0,0] ** 2) ** 2
+        return (1 - x[0]) ** 2 + 100 * (x[1] - x[0] ** 2) ** 2
     
     @staticmethod
     def backward(ctx, grad_output):
@@ -25,12 +25,12 @@ class RosenbrockFunction(torch.autograd.Function):
             ctx: context object
             grad_output: scalar incoming gradient
         Returns:
-            grad_x: vector of shape (2,1)
+            grad_x: vector of shape (2,)
         """
         x = ctx.saved_tensors[0]
         grad_x = torch.zeros_like(x)
-        grad_x[0,0] = -2 * (1 - x[0,0]) - 400 * (x[1,0] - x[0,0] ** 2) * x[0,0]
-        grad_x[1,0] = 200 * (x[1,0] - x[0,0] ** 2)
+        grad_x[0] = -2 * (1 - x[0]) - 400 * (x[1] - x[0] ** 2) * x[0]
+        grad_x[1] = 200 * (x[1] - x[0] ** 2)
         grad_x *= grad_output
         return grad_x
     
@@ -48,7 +48,7 @@ class Rosenbrock(nn.Module):
         Compute the function value.
 
         Args:
-            x: vector of shape (2,1)
+            x: vector of shape (2,)
         Returns:
             f: scalar
         """

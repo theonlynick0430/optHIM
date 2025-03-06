@@ -9,16 +9,15 @@ class QuadraticFunction(torch.autograd.Function):
         Compute the forward pass of the quadratic function.
 
         Args:
-            A: symmetric matrix of shape (n,n)
-            b: vector of shape (n,1)
+            A: symmetric matrix of shape (n, n)
+            b: vector of shape (n,)
             c: scalar
-            x: vector of shape (n,1)
+            x: vector of shape (n,)
         Returns:
             f: scalar
         """
         ctx.save_for_backward(A, b, x)
-        f = 0.5 * x.T @ A @ x + b.T @ x + c
-        return f[0, 0]
+        return 0.5 * torch.einsum('i,ij,j->', x, A, x) + torch.einsum('i,i->', b, x) + c
     
     @staticmethod
     def backward(ctx, grad_output):
@@ -32,10 +31,10 @@ class QuadraticFunction(torch.autograd.Function):
             grad_A: None
             grad_b: None
             grad_c: None
-            grad_x: vector of shape (n,1)
+            grad_x: vector of shape (n,)
         """
         A, b, x = ctx.saved_tensors
-        grad_x = A @ x + b
+        grad_x = torch.einsum('ij,j->i', A, x) + b
         grad_x *= grad_output
         return None, None, None, grad_x
 
@@ -47,8 +46,8 @@ class Quadratic(nn.Module):
         f(x) = 0.5 * x^T A x + b^T x + c
 
         Args:
-            A: symmetric matrix of shape (n,n)
-            b: vector of shape (n,1)
+            A: symmetric matrix of shape (n, n)
+            b: vector of shape (n,)
             c: scalar
         """
         super(Quadratic, self).__init__()
@@ -61,7 +60,7 @@ class Quadratic(nn.Module):
         Compute the function value.
 
         Args:
-            x: vector of shape (n,1)
+            x: vector of shape (n,)
         Returns:
             f: scalar
         """
