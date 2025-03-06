@@ -1,33 +1,30 @@
 import torch
-from torch.optim.optimizer import Optimizer, required
+from torch.optim.optimizer import Optimizer
 
 class GD(Optimizer):
-    """Implements gradient descent with constant step size or backtracking line search.
-    
-    Args:
-        params (iterable): iterable of parameters to optimize or dicts defining
-            parameter groups
-        step_type (str): type of step size to use ('Constant' or 'Backtracking')
-        constant_step_size (float, optional): constant step size for 'Constant' step type
-        alpha_bar (float, optional): initial step size for 'Backtracking' step type
-        tau (float, optional): step size reduction factor for 'Backtracking' step type
-        c1 (float, optional): sufficient decrease parameter for 'Backtracking' step type
-        weight_decay (float, optional): weight decay (L2 penalty) (default: 0)
-    
-    Example:
-        >>> optimizer = GD(model.parameters(), step_type='Constant', constant_step_size=0.1)
-        >>> optimizer.zero_grad()
-        >>> loss_fn(model(input), target).backward()
-        >>> optimizer.step(closure=lambda: loss_fn(model(input), target))
-    """
-
-    def __init__(self, params, step_type='Constant', constant_step_size=0.1, 
-                 alpha_bar=1.0, tau=0.5, c1=1e-4, weight_decay=0):
+    def __init__(self, params, step_type='Constant', step_size=1e-3, 
+                 alpha=1.0, tau=0.5, c1=1e-4):
+        """Implements gradient descent with constant step size or backtracking line search.
+        
+        Inputs:
+            params (iterable): iterable of parameters to optimize or dicts defining
+                parameter groups
+            step_type (str): type of step size to use ('Constant' or 'Backtracking')
+            step_size (float, optional): constant step size for 'Constant' step type
+            alpha (float, optional): initial step size for 'Backtracking' step type
+            tau (float, optional): step size reduction factor for 'Backtracking' step type
+            c1 (float, optional): sufficient decrease parameter for 'Backtracking' step type
+        
+        Example:
+            >>> optimizer = GD(model.parameters(), step_type='Constant', step_size=0.1)
+            >>> optimizer.zero_grad()
+            >>> loss_fn(model(input), target).backward()
+            >>> optimizer.step(closure=lambda: loss_fn(model(input), target))
+        """
         if step_type not in ['Constant', 'Backtracking']:
             raise ValueError(f"step_type must be 'Constant' or 'Backtracking', got {step_type}")
-        
-        defaults = dict(step_type=step_type, constant_step_size=constant_step_size,
-                        alpha_bar=alpha_bar, tau=tau, c1=c1, weight_decay=weight_decay)
+        defaults = dict(step_type=step_type, step_size=step_size,
+                        alpha=alpha, tau=tau, c1=c1)
         super(GD, self).__init__(params, defaults)
 
     def __setstate__(self, state):
@@ -36,80 +33,57 @@ class GD(Optimizer):
     def step(self, closure=None):
         """Performs a single optimization step.
         
-        Args:
+        Inputs:
             closure (callable, optional): A closure that reevaluates the model
                 and returns the loss. Required for backtracking line search.
-        
-        Returns:
-            loss: The loss value returned by the closure, if provided.
         """
-        loss = None
-        if closure is not None:
-            loss = closure()
-
         for group in self.param_groups:
-            weight_decay = group['weight_decay']
             step_type = group['step_type']
             
             for p in group['params']:
                 if p.grad is None:
                     continue
                 
-                # Get gradient
+                # set search direction
                 d_p = p.grad.data
-                
-                # Apply weight decay if specified
-                if weight_decay != 0:
-                    d_p = d_p.add(p.data, alpha=weight_decay)
-                
-                # Set search direction (negative gradient)
                 d = -d_p
-                
-                # Determine step size based on step_type
+
                 if step_type == 'Constant':
-                    alpha = group['constant_step_size']
-                    p.data.add_(d, alpha=alpha)
+                    alpha = group['step_size']
+                    p.data += alpha * d
                 
                 elif step_type == 'Backtracking':
-                    alpha = group['alpha_bar']
+                    alpha = group['alpha']
                     tau = group['tau']
                     c1 = group['c1']
                     
-                    # Store original parameter value and gradient
-                    original_p = p.data.clone()
-                    grad = d_p.clone()
+                    # initial parameter and gradient
+                    p0 = p.data.clone()
+                    d_p0 = d_p.clone()
                     
-                    # Compute current function value if closure is provided
                     if closure is not None:
-                        original_loss = closure()
+                        # compute initial loss if closure is provided
+                        loss0 = closure()
                     else:
-                        # If no closure provided, we can't do backtracking line search
-                        p.data.add_(d, alpha=alpha)
+                        # if no closure provided, we can't do backtracking line search
+                        p.data += alpha * d
                         continue
                     
-                    # Backtracking line search
+                    # backtracking line search
                     while True:
-                        # Update parameter with current step size
-                        p.data = original_p + alpha * d
-                        
-                        # Compute new function value
-                        new_loss = closure()
-                        
-                        # Check Armijo condition
-                        armijo_rhs = original_loss + c1 * alpha * torch.sum(grad * d)
-                        
-                        if new_loss <= armijo_rhs:
+                        # update parameter with current step size
+                        p.data = p0 + alpha * d
+                                        
+                        # check armijo condition
+                        armijo_rhs = loss0 + c1 * alpha * torch.dot(d_p0.view(-1), d.view(-1))
+                        loss = closure()
+                        if loss <= armijo_rhs:
                             break
                         
-                        # Reduce step size
+                        # reduce step size
                         alpha = tau * alpha
                         
-                        # Safety check to prevent infinite loop
+                        # safety check to prevent infinite loop
                         if alpha < 1e-10:
-                            p.data = original_p  # Revert to original parameters
+                            p.data = p0  # revert to original parameters
                             break
-                
-                else:
-                    raise ValueError(f"Unknown step type: {step_type}")
-
-        return loss
