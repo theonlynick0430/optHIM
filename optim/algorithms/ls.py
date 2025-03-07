@@ -1,7 +1,7 @@
 import torch
 
 
-def armijo(p, d, loss_cl, alpha=1.0, tau=0.5, c1=1e-4, min_alpha=1e-10):
+def armijo(p, d, loss_cl, alpha=1.0, tau=0.5, c1=1e-4, max_iter=1e2):
     """
     Performs armijo backtracking line search to find an acceptable step size.
     
@@ -12,7 +12,7 @@ def armijo(p, d, loss_cl, alpha=1.0, tau=0.5, c1=1e-4, min_alpha=1e-10):
         alpha (float, optional): initial step size
         tau (float, optional): step size reduction factor
         c1 (float, optional): sufficient decrease parameter
-        min_alpha (float, optional): minimum step size
+        max_iter (int, optional): maximum number of iterations
     
     Returns:
         alpha (float): selected step size
@@ -23,7 +23,7 @@ def armijo(p, d, loss_cl, alpha=1.0, tau=0.5, c1=1e-4, min_alpha=1e-10):
     loss0 = loss_cl()
     
     # backtracking line search
-    while True:
+    for _ in range(int(max_iter)):
         # update parameter with current step size
         p.data = p0 + alpha * d
                         
@@ -35,8 +35,5 @@ def armijo(p, d, loss_cl, alpha=1.0, tau=0.5, c1=1e-4, min_alpha=1e-10):
         
         # reduce step size
         alpha = tau * alpha
-        
-        # safety check to prevent infinite loop
-        if alpha < min_alpha:
-            p.data = p0  # revert to original parameters
-            return 0.0
+
+    return alpha

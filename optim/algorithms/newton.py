@@ -49,6 +49,8 @@ class Newton(Optimizer):
                 # set search direction
                 d_p = p.grad.data
                 H = hessian(self.model, p.data)
+                # ensure descent search direction
+                H = self.correct_hess(H)
                 d = -torch.linalg.pinv(H) @ d_p
                 
                 if step_type == 'constant':
@@ -62,3 +64,40 @@ class Newton(Optimizer):
                     tau = group['tau']
                     c1 = group['c1']
                     ls.armijo(p, d, loss_cl, alpha, tau, c1) 
+
+    def correct_hess(self, H, beta=1e-6, max_iter=1e2):
+        """
+        Corrects the Hessian to be positive definite.
+
+        Args:
+            H (torch.Tensor): Hessian matrix of shape (n, n)
+            beta (float): positive scalar for Hessian modification
+            max_iter (int, optional): maximum number of iterations
+
+        Returns:
+            H_hat (torch.Tensor): corrected Hessian matrix of shape (n, n)
+        """
+        # initialize eta
+        min_diag = torch.min(torch.diag(H))
+        if min_diag > 0:
+            eta = 0.0
+        else:
+            eta = -min_diag + beta
+
+        I = torch.eye(H.shape[0], device=H.device, dtype=H.dtype)
+        
+        for _ in range(int(max_iter)):
+            try:
+                # attempt Cholesky factorization
+                H_hat = H + eta * I
+                torch.linalg.cholesky(H_hat)
+                # break if successful
+                break
+            except RuntimeError:
+                # if factorization fails, increase eta
+                if eta >= beta:
+                    break
+                else:
+                    eta = max(2 * eta, beta)
+        
+        return H_hat
