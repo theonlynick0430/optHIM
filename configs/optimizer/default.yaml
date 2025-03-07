@@ -3,5 +3,4 @@
 # Common settings for all optimizers
 max_iter: 100
 tol: 1.0e-6
-verbose: true
 save_traj: true 
