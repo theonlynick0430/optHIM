@@ -2,6 +2,7 @@
 _target_: optim.algorithms.bfgs.BFGS
 
 # Algorithm parameters
+eps_sy: 1e-6         # Skip update if s^T y <= eps_sy ||s|| ||y||
 step_type: constant  # Options: constant, armijo
 step_size: 1.0       # Used for constant step type
 alpha: 1.0           # Initial step size for armijo step type

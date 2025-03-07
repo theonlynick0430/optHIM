@@ -4,7 +4,7 @@ import optim.algorithms.ls as ls
 
 
 class BFGS(Optimizer):
-    def __init__(self, params, step_type='constant', step_size=1.0, 
+    def __init__(self, params, eps_sy=1e-6, step_type='constant', step_size=1.0, 
                  alpha=1.0, tau=0.5, c1=1e-4):
         """
         Implements BFGS quasi-Newton method with constant step size or backtracking line search.
@@ -12,6 +12,7 @@ class BFGS(Optimizer):
         Args:
             params (iterable): iterable of parameters to optimize or dicts defining
                 parameter groups
+            eps_sy (float, optional): skip update if s^T y <= eps_sy ||s|| ||y||
             step_type (str): type of step size to use ('constant' or 'armijo')
             step_size (float, optional): constant step size for 'constant' step type
             alpha (float, optional): initial step size for 'armijo' step type
@@ -26,7 +27,7 @@ class BFGS(Optimizer):
         """
         if step_type not in ['constant', 'armijo']:
             raise ValueError(f"step_type must be 'constant' or 'armijo', got {step_type}")
-        defaults = dict(step_type=step_type, step_size=step_size,
+        defaults = dict(eps_sy=eps_sy, step_type=step_type, step_size=step_size,
                         alpha=alpha, tau=tau, c1=c1)
         super(BFGS, self).__init__(params, defaults)
 
@@ -39,6 +40,7 @@ class BFGS(Optimizer):
                 and returns the loss. Required for backtracking line search.
         """
         for group in self.param_groups:
+            eps_sy = group['eps_sy']
             step_type = group['step_type']
             
             for param in group['params']:
@@ -60,7 +62,7 @@ class BFGS(Optimizer):
                     s = p - p_prev
                     y = d_p - d_p_prev
                     curv_cond = y @ s
-                    if curv_cond > 0: # skip update if curvature condition not satisfied
+                    if curv_cond > eps_sy * torch.norm(s) * torch.norm(y):
                         rho = 1.0 / curv_cond
                         H = (I - rho * torch.einsum('i,j->ij', s, y)) @ H_prev @ (I - rho * torch.einsum('i,j->ij', y, s))
                         H = H + rho * torch.einsum('i,j->ij', s, s)
