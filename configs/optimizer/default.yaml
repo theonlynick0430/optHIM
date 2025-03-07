@@ -1,0 +1,7 @@
+# Default optimizer configuration
+
+# Common settings for all optimizers
+max_iterations: 100
+tolerance: 1.0e-6
+verbose: true
+save_trajectory: true 

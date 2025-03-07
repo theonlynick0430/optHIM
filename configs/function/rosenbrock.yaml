@@ -1,0 +1,9 @@
+# Rosenbrock function configuration
+_target_: optim.functions.rosenbrock.Rosenbrock
+
+# Function parameters
+a: 1.0    # Parameter a in the Rosenbrock function
+b: 100.0  # Parameter b in the Rosenbrock function
+
+# Initial point
+initial_point: [-1.2, 1.0]  # Standard starting point for Rosenbrock function 

@@ -1,0 +1,18 @@
+# @package _global_
+
+defaults:
+  - algorithm: gd
+  - function: quadratic
+  - optimizer: default
+  - _self_
+
+# Experiment settings
+experiment:
+  name: default_experiment
+  seed: 42
+  max_iterations: 100
+  
+# Logging settings
+logging:
+  level: INFO
+  save_dir: ./logs 

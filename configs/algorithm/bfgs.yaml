@@ -1,0 +1,9 @@
+# BFGS Quasi-Newton Method configuration
+_target_: optim.algorithms.bfgs.BFGS
+
+# Algorithm parameters
+step_type: constant  # Options: constant, armijo
+step_size: 1.0       # Used for constant step type
+alpha: 1.0           # Initial step size for armijo step type
+tau: 0.5             # Step size reduction factor for armijo
+c1: 1.0e-4           # Sufficient decrease parameter for armijo 
