@@ -1,12 +1,13 @@
+import torch
 from torch.optim.optimizer import Optimizer
 import optim.algorithms.ls as ls
 
 
-class GD(Optimizer):
-    def __init__(self, params, step_type='constant', step_size=1e-3, 
+class BFGS(Optimizer):
+    def __init__(self, params, step_type='constant', step_size=1.0, 
                  alpha=1.0, tau=0.5, c1=1e-4):
         """
-        Implements gradient descent with constant step size or backtracking line search.
+        Implements BFGS quasi-Newton method with constant step size or backtracking line search.
         
         Args:
             params (iterable): iterable of parameters to optimize or dicts defining
@@ -18,19 +19,16 @@ class GD(Optimizer):
             c1 (float, optional): sufficient decrease parameter for 'armijo' step type
         
         Example:
-            >>> optimizer = GD(model.parameters(), step_type='constant', step_size=0.1)
+            >>> optimizer = BFGS(model.parameters(), model, step_type='constant', step_size=1.0)
             >>> optimizer.zero_grad()
             >>> loss_fn(model(input), target).backward()
-            >>> optimizer.step()
+            >>> optimizer.step(loss_cl=lambda: loss_fn(model(input), target))
         """
         if step_type not in ['constant', 'armijo']:
             raise ValueError(f"step_type must be 'constant' or 'armijo', got {step_type}")
         defaults = dict(step_type=step_type, step_size=step_size,
                         alpha=alpha, tau=tau, c1=c1)
-        super(GD, self).__init__(params, defaults)
-
-    def __setstate__(self, state):
-        super(GD, self).__setstate__(state)
+        super(BFGS, self).__init__(params, defaults)
 
     def step(self, loss_cl=None):
         """
@@ -46,11 +44,29 @@ class GD(Optimizer):
             for param in group['params']:
                 if param.grad is None:
                     continue
-                
+
                 p = param.data
                 d_p = param.grad.data
+                n = p.numel()
+                I = torch.eye(n, device=p.device, dtype=p.dtype)
+                H = I # H_0 = I
+
+                if param in self.state:
+                    # retrieve history for this param
+                    p_prev = self.state[param]['p_prev']
+                    d_p_prev = self.state[param]['d_p_prev']
+                    H_prev = self.state[param]['H_prev']
+                    # compute BFGS update
+                    s = p - p_prev
+                    y = d_p - d_p_prev
+                    curv_cond = y @ s
+                    if curv_cond > 0: # skip update if curvature condition not satisfied
+                        rho = 1.0 / curv_cond
+                        H = (I - rho * torch.einsum('i,j->ij', s, y)) @ H_prev @ (I - rho * torch.einsum('i,j->ij', y, s))
+                        H = H + rho * torch.einsum('i,j->ij', s, s)
+
                 # compute search direction
-                d = -d_p
+                d = -H @ d_p
 
                 if step_type == 'constant':
                     alpha = group['step_size']
@@ -62,4 +78,10 @@ class GD(Optimizer):
                     alpha = group['alpha']
                     tau = group['tau']
                     c1 = group['c1']
-                    ls.armijo(param, d, loss_cl, alpha, tau, c1)
+                    ls.armijo(param, d, loss_cl, alpha, tau, c1)    
+                
+                # update history
+                self.state[param]['p_prev'] = p.clone()
+                self.state[param]['d_p_prev'] = d_p.clone()
+                self.state[param]['H_prev'] = H
+                

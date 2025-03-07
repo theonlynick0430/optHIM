@@ -7,7 +7,8 @@ import optim.algorithms.ls as ls
 class Newton(Optimizer):
     def __init__(self, params, model, step_type='constant', step_size=1.0, 
                  alpha=1.0, tau=0.5, c1=1e-4):
-        """Implements Newton's method with constant step size or backtracking line search.
+        """
+        Implements Newton's method with constant step size or backtracking line search.
         
         Args:
             params (iterable): iterable of parameters to optimize or dicts defining
@@ -33,7 +34,8 @@ class Newton(Optimizer):
         super(Newton, self).__init__(params, defaults)
 
     def step(self, loss_cl=None):
-        """Performs a single optimization step.
+        """
+        Performs a single optimization step.
         
         Args:
             loss_cl (callable, optional): closure that reevaluates the model
@@ -42,20 +44,22 @@ class Newton(Optimizer):
         for group in self.param_groups:
             step_type = group['step_type']
             
-            for p in group['params']:
-                if p.grad is None:
+            for param in group['params']:
+                if param.grad is None:
                     continue
                 
-                # set search direction
-                d_p = p.grad.data
-                H = hessian(self.model, p.data)
-                # ensure descent search direction
+                p = param.data
+                d_p = param.grad.data
+                # compute Hessian
+                H = hessian(self.model, p)
+                # ensure PD => descent direction
                 H = self.correct_hess(H)
+                # compute search direction
                 d = -torch.linalg.pinv(H) @ d_p
                 
                 if step_type == 'constant':
                     alpha = group['step_size']
-                    p.data += alpha * d
+                    p += alpha * d
                 
                 elif step_type == 'armijo':
                     if loss_cl is None:
@@ -63,7 +67,7 @@ class Newton(Optimizer):
                     alpha = group['alpha']
                     tau = group['tau']
                     c1 = group['c1']
-                    ls.armijo(p, d, loss_cl, alpha, tau, c1) 
+                    ls.armijo(param, d, loss_cl, alpha, tau, c1) 
 
     def correct_hess(self, H, beta=1e-6, max_iter=1e2):
         """
