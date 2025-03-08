@@ -1,8 +1,8 @@
 # @package _global_
 
 defaults:
-  - algorithm: gd
-  - function: quadratic
+  - algorithm: bfgs
+  - function: rosenbrock
   - _self_
 
 # Experiment settings
@@ -15,7 +15,7 @@ experiment:
 # Logging settings
 logging:
   level: INFO
-  log_dir: ./logs 
   save_traj: True
+  save_loss: True
   plot_traj: True
-  plot_loss: Trues
+  plot_loss: True

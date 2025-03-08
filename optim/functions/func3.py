@@ -17,9 +17,9 @@ class Func3(nn.Module):
         Compute the function value.
         
         Args:
-            x: vector of shape (n,)
+            x (torch.Tensor): vector of shape (n,)
         Returns:
-            f: scalar
+            f (float): scalar
         """
         z1 = x[0]
         exp_z1 = torch.exp(z1)
@@ -30,6 +30,6 @@ class Func3(nn.Module):
     
     def solution(self):
         """
-        Returns the solution x* to the function.
+        Returns the solution x* of shape (n,).
         """
         return self.x_star

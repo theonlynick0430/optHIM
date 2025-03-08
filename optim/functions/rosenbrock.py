@@ -16,14 +16,14 @@ class Rosenbrock(nn.Module):
         Compute the function value.
 
         Args:
-            x: vector of shape (2,)
+            x (torch.Tensor): vector of shape (2,)
         Returns:
-            f: scalar
+            f (float): scalar
         """
         return (1 - x[0]) ** 2 + 100 * (x[1] - x[0] ** 2) ** 2
     
     def solution(self):
         """
-        Returns the solution x* to the function.
+        Returns the solution x* of shape (2,).
         """
         return self.x_star

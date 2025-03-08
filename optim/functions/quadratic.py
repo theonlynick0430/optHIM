@@ -9,12 +9,12 @@ class QuadraticFunction(torch.autograd.Function):
         Compute the forward pass of the quadratic function.
 
         Args:
-            A: symmetric matrix of shape (n, n)
-            b: vector of shape (n,)
-            c: scalar
-            x: vector of shape (n,)
+            A (torch.Tensor): symmetric matrix of shape (n, n)
+            b (torch.Tensor): vector of shape (n,)
+            c (float): scalar
+            x (torch.Tensor): vector of shape (n,)
         Returns:
-            f: scalar
+            f (float): scalar
         """
         ctx.save_for_backward(A, b, x)
         return 0.5 * torch.einsum('i,ij,j->', x, A, x) + torch.einsum('i,i->', b, x) + c
@@ -25,13 +25,13 @@ class QuadraticFunction(torch.autograd.Function):
         Compute the backward pass of the quadratic function.
 
         Args:
-            ctx: context object
-            grad_output: scalar incoming gradient
+            ctx (torch.autograd.Function): context object
+            grad_output (float): scalar incoming gradient
         Returns:
-            grad_A: None
-            grad_b: None
-            grad_c: None
-            grad_x: vector of shape (n,)
+            grad_A (torch.Tensor): None
+            grad_b (torch.Tensor): None
+            grad_c (float): None
+            grad_x (torch.Tensor): vector of shape (n,)
         """
         # custom gradient for symmetric A
         A, b, x = ctx.saved_tensors
@@ -47,9 +47,9 @@ class Quadratic(nn.Module):
         f(x) = 0.5 * x^T A x + b^T x + c
 
         Args:
-            A: symmetric matrix of shape (n, n)
-            b: vector of shape (n,)
-            c: scalar
+            A (torch.Tensor): symmetric matrix of shape (n, n)
+            b (torch.Tensor): vector of shape (n,)
+            c (float): scalar
         """
         super(Quadratic, self).__init__()
         self.register_buffer('A', A)
@@ -61,14 +61,14 @@ class Quadratic(nn.Module):
         Compute the function value.
 
         Args:
-            x: vector of shape (n,)
+            x (torch.Tensor): vector of shape (n,)
         Returns:
-            f: scalar
+            f (float): scalar
         """
         return QuadraticFunction.apply(self.A, self.b, self.c, x)
     
     def solution(self):
         """
-        Returns the solution x* to the function.
+        Returns the solution x* of shape (n,).
         """
         return -torch.linalg.pinv(self.A) @ self.b
