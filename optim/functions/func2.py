@@ -11,7 +11,6 @@ class Func2(nn.Module):
         """
         super(Func2, self).__init__()
         self.register_buffer('y', torch.tensor([1.5, 2.25, 2.625], dtype=torch.float32))
-        self.register_buffer('x_star', torch.tensor([3.0, 0.5], dtype=torch.float32))
     
     def forward(self, x):
         """
@@ -32,4 +31,4 @@ class Func2(nn.Module):
         """
         Returns the solution x* of shape (2,).
         """
-        return self.x_star
+        return None

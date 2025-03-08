@@ -3,7 +3,7 @@ _target_: optim.algorithms.newton.Newton
 
 # Algorithm parameters
 beta: 1e-6           # Positive scalar for Hessian modification
-step_type: constant  # Options: constant, armijo
+step_type: armijo    # Options: constant, armijo
 step_size: 1.0       # Used for constant step type
 alpha: 1.0           # Initial step size for armijo step type
 tau: 0.5             # Step size reduction factor for armijo

@@ -1,8 +1,8 @@
 # @package _global_
 
 defaults:
-  - algorithm: bfgs
-  - function: rosenbrock
+  - algorithm: gd
+  - function: quadratic
   - _self_
 
 # Experiment settings
@@ -17,5 +17,7 @@ logging:
   level: INFO
   save_traj: True
   save_loss: True
+  save_grad_norm: True
   plot_traj: True
   plot_loss: True
+  plot_grad_norm: True

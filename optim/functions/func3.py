@@ -10,7 +10,6 @@ class Func3(nn.Module):
         where x = [z1, z2, ..., zn]^T
         """
         super(Func3, self).__init__()
-        self.register_buffer('x_star', torch.tensor([-1.25] + [0.0] * n, dtype=torch.float32))
 
     def forward(self, x):
         """
@@ -32,4 +31,4 @@ class Func3(nn.Module):
         """
         Returns the solution x* of shape (n,).
         """
-        return self.x_star
+        return None

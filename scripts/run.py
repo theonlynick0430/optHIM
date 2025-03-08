@@ -80,32 +80,41 @@ def run_optimization(function, x, optimizer, config):
     tol = config.experiment.get('tol', 1e-6)
     save_traj = config.experiment.get('save_traj', True)
     save_loss = config.experiment.get('save_loss', True)
+    save_grad_norm = config.experiment.get('save_grad_norm', True)
     plot_traj = config.experiment.get('plot_traj', True)
     plot_loss = config.experiment.get('plot_loss', True)
+    plot_grad_norm = config.experiment.get('plot_grad_norm', True)
 
-    # solution
     x_star = function.solution()
-    f_star = function(x_star)
-    
+    f_star = None
+    if x_star is not None:
+        f_star = function(x_star)
+    else:
+        logger.warning("Function has no known solution, saving and plotting loss is disabled")
+        save_loss = False
+        plot_loss = False
+
+    # initial metrics
     traj = []
     loss_traj = []
+    grad_norm_traj = []
     f = function(x)
-    if save_traj:
-        # store initial point
-        traj.append(x.clone().detach().cpu().numpy())
-    # store initial loss
-    initial_loss = torch.abs(f_star - f)
-    loss_traj.append(initial_loss.item())
-
-    # compute convergence threshold
     f.backward()
     initial_grad_norm = torch.max(torch.abs(x.grad)).item()
+    if save_traj or plot_traj:
+        traj.append(x.clone().detach().cpu().numpy())
+    if save_loss or plot_loss:
+        loss_traj.append(torch.abs(f_star - f).item())    
+    if save_grad_norm or plot_grad_norm:
+        grad_norm_traj.append(initial_grad_norm)
+
+    # compute convergence threshold
     conv_thresh = tol * max(initial_grad_norm, 1.0)
     
     # log initial state
     logger.info(f"Starting optimization")
     logger.info(f"Initial point: {x.tolist()}")
-    logger.info(f"Initial loss: {loss_traj[0]}")
+    logger.info(f"Initial gradient norm: {initial_grad_norm}")
     logger.info(f"Convergence threshold: {conv_thresh}")
     
     # optimization loop
@@ -115,18 +124,22 @@ def run_optimization(function, x, optimizer, config):
         optimizer.zero_grad()
         f = function(x)
         f.backward()
-        
-        # save metrics
-        if save_traj:
-            traj.append(x.clone().detach().cpu().numpy())
-        loss = torch.abs(f_star - f)
-        loss_traj.append(loss.item())
 
+        # compute metrics
+        loss = None
+        if f_star is not None:
+            loss = torch.abs(f_star - f).item()
         grad_norm = torch.max(torch.abs(x.grad)).item()
+        if save_traj or plot_traj:
+            traj.append(x.clone().detach().cpu().numpy())
+        if save_loss or plot_loss:
+            loss_traj.append(loss)
+        if save_grad_norm or plot_grad_norm:
+            grad_norm_traj.append(grad_norm)
         
         # log progress
         if i % 10 == 0 or i == max_iter - 1:
-            logger.info(f"Iteration {i+1}/{max_iter}, Loss: {loss_traj[-1]:.6f}, Grad norm: {grad_norm:.6f}")
+            logger.info(f"Iteration {i+1}/{max_iter}, Grad norm: {grad_norm:.6f}")
         
         # check convergence
         if grad_norm <= conv_thresh:
@@ -136,7 +149,6 @@ def run_optimization(function, x, optimizer, config):
     # final results
     logger.info(f"Optimization completed")
     logger.info(f"Final point: {x.tolist()}")
-    logger.info(f"Final loss: {loss_traj[-1]:.6f}")
     logger.info(f"Final gradient norm: {grad_norm:.6f}")
         
     # create log directory
@@ -152,6 +164,9 @@ def run_optimization(function, x, optimizer, config):
     if save_loss:
         loss_traj = np.array(loss_traj)
         np.save(log_path / 'loss_traj.npy', loss_traj)
+    if save_grad_norm:
+        grad_norm_traj = np.array(grad_norm_traj)
+        np.save(log_path / 'grad_norm_traj.npy', grad_norm_traj)
         
     if plot_traj:
         if traj.shape[1] != 2:
@@ -174,6 +189,13 @@ def run_optimization(function, x, optimizer, config):
             [loss_traj], 
             [f"{config.algorithm._target_}"],
             "Loss Plot",
+            log_dir=log_path
+        )
+    if plot_grad_norm:
+        plot_utils.plot_loss_trajs(
+            [grad_norm_traj],
+            [f"{config.algorithm._target_}"],
+            "Gradient Norm Plot",
             log_dir=log_path
         )
     
