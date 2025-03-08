@@ -5,7 +5,7 @@ import optim.algorithms.ls as ls
 
 
 class Newton(Optimizer):
-    def __init__(self, params, model, beta=1e-6, step_type='constant', step_size=1.0, 
+    def __init__(self, params, function, beta=1e-6, step_type='constant', step_size=1.0, 
                  alpha=1.0, tau=0.5, c1=1e-4):
         """
         Implements Newton's method with constant step size or backtracking line search.
@@ -13,34 +13,28 @@ class Newton(Optimizer):
         Args:
             params (iterable): iterable of parameters to optimize or dicts defining
                 parameter groups
-            model (nn.Module): model used to compute Hessian
+            function (nn.Module): function to compute Hessian of
             beta (float): positive scalar for Hessian modification
             step_type (str): type of step size to use ('constant' or 'armijo')
             step_size (float, optional): constant step size for 'constant' step type
             alpha (float, optional): initial step size for 'armijo' step type
             tau (float, optional): step size reduction factor for 'armijo' step type
             c1 (float, optional): sufficient decrease parameter for 'armijo' step type
-        
-        Example:
-            >>> optimizer = Newton(model.parameters(), step_type='constant', step_size=1.0)
-            >>> optimizer.zero_grad()
-            >>> loss_fn(model(input), target).backward()
-            >>> optimizer.step(hess_cl=lambda: compute_hessian(model, input))
         """
         if step_type not in ['constant', 'armijo']:
             raise ValueError(f"step_type must be 'constant' or 'armijo', got {step_type}")
         defaults = dict(beta=beta, step_type=step_type, step_size=step_size,
                         alpha=alpha, tau=tau, c1=c1)
-        self.model = model
         super(Newton, self).__init__(params, defaults)
+        self.function = function
 
-    def step(self, loss_cl=None):
+    def step(self, fn_cls=None):
         """
         Performs a single optimization step.
         
         Args:
-            loss_cl (callable, optional): closure that reevaluates the model
-                and returns the loss. Required for backtracking line search.
+            fn_cls (callable, optional): closure that reevaluates the function.
+                Required for backtracking line search.
         """
         for group in self.param_groups:
             step_type = group['step_type']
@@ -52,7 +46,7 @@ class Newton(Optimizer):
                 p = param.data
                 d_p = param.grad.data
                 # compute Hessian
-                H = hessian(self.model, p)
+                H = hessian(self.function, p)
                 # ensure PD => descent direction
                 H = self.correct_hess(H, beta)
                 # compute search direction
@@ -63,12 +57,12 @@ class Newton(Optimizer):
                     p += alpha * d
                 
                 elif step_type == 'armijo':
-                    if loss_cl is None:
-                        raise ValueError("loss_cl must be provided for backtracking line search")
+                    if fn_cls is None:
+                        raise ValueError("fn_cls must be provided for backtracking line search")
                     alpha = group['alpha']
                     tau = group['tau']
                     c1 = group['c1']
-                    ls.armijo(param, d, loss_cl, alpha, tau, c1) 
+                    ls.armijo(param, d, fn_cls, alpha, tau, c1) 
 
     def correct_hess(self, H, beta=1e-6, max_iter=1e2):
         """

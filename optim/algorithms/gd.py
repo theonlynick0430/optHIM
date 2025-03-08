@@ -16,12 +16,6 @@ class GD(Optimizer):
             alpha (float, optional): initial step size for 'armijo' step type
             tau (float, optional): step size reduction factor for 'armijo' step type
             c1 (float, optional): sufficient decrease parameter for 'armijo' step type
-        
-        Example:
-            >>> optimizer = GD(model.parameters(), step_type='constant', step_size=0.1)
-            >>> optimizer.zero_grad()
-            >>> loss_fn(model(input), target).backward()
-            >>> optimizer.step()
         """
         if step_type not in ['constant', 'armijo']:
             raise ValueError(f"step_type must be 'constant' or 'armijo', got {step_type}")
@@ -32,13 +26,13 @@ class GD(Optimizer):
     def __setstate__(self, state):
         super(GD, self).__setstate__(state)
 
-    def step(self, loss_cl=None):
+    def step(self, fn_cls=None):
         """
         Performs a single optimization step.
         
         Args:
-            loss_cl (callable, optional): closure that reevaluates the model
-                and returns the loss. Required for backtracking line search.
+            fn_cls (callable, optional): closure that reevaluates the function.
+                Required for backtracking line search.
         """
         for group in self.param_groups:
             step_type = group['step_type']
@@ -57,9 +51,9 @@ class GD(Optimizer):
                     p += alpha * d
                 
                 elif step_type == 'armijo':
-                    if loss_cl is None:
-                        raise ValueError("loss_cl must be provided for armijo line search")
+                    if fn_cls is None:
+                        raise ValueError("fn_cls must be provided for armijo line search")
                     alpha = group['alpha']
                     tau = group['tau']
                     c1 = group['c1']
-                    ls.armijo(param, d, loss_cl, alpha, tau, c1)
+                    ls.armijo(param, d, fn_cls, alpha, tau, c1)

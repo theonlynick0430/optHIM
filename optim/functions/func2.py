@@ -10,7 +10,8 @@ class Func2(nn.Module):
         where x = [w, z]^T and y = [1.5, 2.25, 2.625]^T
         """
         super(Func2, self).__init__()
-        self.y = torch.tensor([1.5, 2.25, 2.625], dtype=torch.float32)
+        self.register_buffer('y', torch.tensor([1.5, 2.25, 2.625], dtype=torch.float32))
+        self.register_buffer('x_star', torch.tensor([3.0, 0.5], dtype=torch.float32))
     
     def forward(self, x):
         """
@@ -26,3 +27,9 @@ class Func2(nn.Module):
         z_pow = torch.stack([1-z, 1-z**2, 1-z**3])
         term = self.y - w * z_pow
         return torch.sum(term**2)
+    
+    def solution(self):
+        """
+        Returns the solution x* to the function.
+        """
+        return self.x_star

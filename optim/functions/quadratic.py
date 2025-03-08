@@ -52,9 +52,9 @@ class Quadratic(nn.Module):
             c: scalar
         """
         super(Quadratic, self).__init__()
-        self.A = A
-        self.b = b
-        self.c = c  
+        self.register_buffer('A', A)
+        self.register_buffer('b', b)
+        self.register_buffer('c', c)  
 
     def forward(self, x):
         """
@@ -66,3 +66,9 @@ class Quadratic(nn.Module):
             f: scalar
         """
         return QuadraticFunction.apply(self.A, self.b, self.c, x)
+    
+    def solution(self):
+        """
+        Returns the solution x* to the function.
+        """
+        return -torch.linalg.pinv(self.A) @ self.b

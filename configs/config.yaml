@@ -3,7 +3,6 @@
 defaults:
   - algorithm: gd
   - function: quadratic
-  - optimizer: default
   - _self_
 
 # Experiment settings
@@ -11,8 +10,12 @@ experiment:
   name: default_exp
   seed: 42
   max_iter: 100
+  tol: 1e-6
   
 # Logging settings
 logging:
   level: INFO
-  save_dir: ./logs 
+  log_dir: ./logs 
+  save_traj: True
+  plot_traj: True
+  plot_loss: Trues

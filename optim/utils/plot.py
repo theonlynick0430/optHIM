@@ -4,12 +4,12 @@ import numpy as np
 import torch
 
 
-def create_contours(model, x1, x2):
+def create_contours(function, x1, x2):
     """
     Create contours to visualize the function.
 
     Args:
-        model (torch.nn.Module): model to create contours for
+        function (torch.nn.Module): function to create contours for
         x1 (np.ndarray): contour x-coordinates of shape (n,)
         x2 (np.ndarray): contour y-coordinates of shape (n,)
 
@@ -23,7 +23,7 @@ def create_contours(model, x1, x2):
     for i in range(len(x1)):
         for j in range(len(x2)):
             x = torch.tensor([x1[i], x2[j]], dtype=torch.float32)
-            Z[j,i] = model(x)
+            Z[j,i] = function(x)
     return X1, X2, Z
 
 def plot_traj(traj, title, contours=None, log_dir=None):
