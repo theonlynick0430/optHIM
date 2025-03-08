@@ -11,7 +11,7 @@ Collection of popular optimization algorithms in PyTorch.
 
 ## Overview
 
-This repository contains implementations of various optimization algorithms using PyTorch for automatic differentiation. The library is designed to be modular, configurable via Hydra, and easy to extend with new algorithms and test functions. The repository is compatible with cpu, gpu and subclasses the native PyTorch optimizer for seemless integration.  
+This repository contains implementations of various optimization algorithms using PyTorch for automatic differentiation. The library is designed to be modular, configurable via Hydra, and easy to extend with new algorithms and functions. The repository is compatible with cpu, gpu and subclasses the native PyTorch optimizer for seamless integration.  
 
 
 ## Available Algorithms
@@ -24,7 +24,7 @@ Currently Released:
 Coming Soon: 
 - L-BFGS (`l-bfgs.py`): memory efficient BFGS method
 - DFP (`dfp.py`): hybrid Quasi-Newton (approximate second-order) method
-- TRNewtonCG (`tr_newton_cg.py`): trust region Newton with conjugate gradient subproblem solver
+- TRNewtonCG (`tr_newton_cg.py`): trust region Newton method with conjugate gradient subproblem solver
 - TRSR1CG (`tr_sr1_cg.py`): SR1 Quasi-Newton method with conjugate gradient subproblem solver
 - Support for line search via backtracking with Wolfe conditions
 
@@ -63,8 +63,8 @@ python scripts/run.py
 
 The configuration files are located in the `configs` directory:
 - `config.yaml`: Main configuration file
-- `function/*.yaml`: Function configurations (quadratic, rosenbrock, func2, func3)
-- `algorithm/*.yaml`: Algorithm configurations (gd, newton, bfgs)
+- `function/*.yaml`: Function configurations (quadratic, rosenbrock, func2, func3, etc.)
+- `algorithm/*.yaml`: Algorithm configurations (gd, newton, bfgs, etc.)
 
 ### Available Test Notebooks
 
