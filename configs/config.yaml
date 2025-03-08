@@ -8,9 +8,9 @@ defaults:
 
 # Experiment settings
 experiment:
-  name: default_experiment
+  name: default_exp
   seed: 42
-  max_iterations: 100
+  max_iter: 100
   
 # Logging settings
 logging:

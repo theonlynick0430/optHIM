@@ -1,6 +1,0 @@
-# Default optimizer configuration
-
-# Common settings for all optimizers
-max_iter: 100
-tol: 1.0e-6
-save_traj: true 

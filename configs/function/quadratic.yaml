@@ -2,10 +2,10 @@
 _target_: optim.functions.quadratic.Quadratic
 
 # Function parameters
-data_file: None
-A: [[1.0, 0.0], [0.0, 10.0]]  # Matrix A in the quadratic form (condition number = 10)
-b: [-2.0, -4.0]               # Vector b in the quadratic form
-c: 5.0                        # Constant term in the quadratic form
+data_file: None               # File path to load data from
+A: [[1.0, 0.0], [0.0, 1.0]]   # Matrix A in the quadratic form
+b: [0.0, 0.0]                 # Vector b in the quadratic form
+c: 0.0                        # Constant term in the quadratic form
 
 # Initial point
-initial_point: [3.0, 3.0]     # Starting point for optimization 
+initial_point: [1.0, 1.0]

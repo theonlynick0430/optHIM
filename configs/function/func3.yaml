@@ -1,0 +1,5 @@
+# Func3 function configuration
+_target_: optim.functions.func3.Func3
+
+# Initial point
+initial_point: [1.0, 0.0]

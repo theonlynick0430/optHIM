@@ -5,7 +5,7 @@ import optim.algorithms.ls as ls
 
 
 class Newton(Optimizer):
-    def __init__(self, params, model, step_type='constant', step_size=1.0, 
+    def __init__(self, params, model, beta=1e-6, step_type='constant', step_size=1.0, 
                  alpha=1.0, tau=0.5, c1=1e-4):
         """
         Implements Newton's method with constant step size or backtracking line search.
@@ -14,6 +14,7 @@ class Newton(Optimizer):
             params (iterable): iterable of parameters to optimize or dicts defining
                 parameter groups
             model (nn.Module): model used to compute Hessian
+            beta (float): positive scalar for Hessian modification
             step_type (str): type of step size to use ('constant' or 'armijo')
             step_size (float, optional): constant step size for 'constant' step type
             alpha (float, optional): initial step size for 'armijo' step type
@@ -28,7 +29,7 @@ class Newton(Optimizer):
         """
         if step_type not in ['constant', 'armijo']:
             raise ValueError(f"step_type must be 'constant' or 'armijo', got {step_type}")
-        defaults = dict(step_type=step_type, step_size=step_size,
+        defaults = dict(beta=beta, step_type=step_type, step_size=step_size,
                         alpha=alpha, tau=tau, c1=c1)
         self.model = model
         super(Newton, self).__init__(params, defaults)
@@ -43,7 +44,7 @@ class Newton(Optimizer):
         """
         for group in self.param_groups:
             step_type = group['step_type']
-            
+            beta = group['beta']
             for param in group['params']:
                 if param.grad is None:
                     continue
@@ -53,7 +54,7 @@ class Newton(Optimizer):
                 # compute Hessian
                 H = hessian(self.model, p)
                 # ensure PD => descent direction
-                H = self.correct_hess(H)
+                H = self.correct_hess(H, beta)
                 # compute search direction
                 d = -torch.linalg.pinv(H) @ d_p
                 
