@@ -19,10 +19,10 @@ Currently Released:
 - Gradient Descent (`gd.py`): classic fast first-order method 
 - Newton's Method (`newton.py`): powerful (but slower) second-order method
 - BFGS (`bfgs.py`): hybrid Quasi-Newton (approximate second-order) method
+- L-BFGS (`l-bfgs.py`): memory efficient BFGS method
 - Support for constant step size and line search via backtracking with the Armijo condition
 
 Coming Soon: 
-- L-BFGS (`l-bfgs.py`): memory efficient BFGS method
 - DFP (`dfp.py`): hybrid Quasi-Newton (approximate second-order) method
 - TRNewtonCG (`tr_newton_cg.py`): trust region Newton method with conjugate gradient subproblem solver
 - TRSR1CG (`tr_sr1_cg.py`): SR1 Quasi-Newton method with conjugate gradient subproblem solver
