@@ -78,12 +78,12 @@ def run_optimization(function, x, optimizer, config):
     # experiment settings
     max_iter = config.experiment.get('max_iter', 100)
     tol = config.experiment.get('tol', 1e-6)
-    save_traj = config.experiment.get('save_traj', True)
-    save_loss = config.experiment.get('save_loss', True)
-    save_grad_norm = config.experiment.get('save_grad_norm', True)
-    plot_traj = config.experiment.get('plot_traj', True)
-    plot_loss = config.experiment.get('plot_loss', True)
-    plot_grad_norm = config.experiment.get('plot_grad_norm', True)
+    save_traj = config.logging.get('save_traj', True)
+    save_loss = config.logging.get('save_loss', True)
+    save_grad_norm = config.logging.get('save_grad_norm', True)
+    plot_traj = config.logging.get('plot_traj', True)
+    plot_loss = config.logging.get('plot_loss', True)
+    plot_grad_norm = config.logging.get('plot_grad_norm', True)
 
     x_star = function.solution()
     f_star = None
