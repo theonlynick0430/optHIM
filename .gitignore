@@ -35,3 +35,6 @@ ENV/
 # Hydra outputs
 outputs/
 multirun/ 
+
+# data
+data/

@@ -11,17 +11,19 @@ class GD(Optimizer):
         Args:
             params (iterable): iterable of parameters to optimize or dicts defining
                 parameter groups
-            step_type (str): type of step size to use ('constant' or 'armijo')
+            step_type (str): type of step size to use ('constant', 'decay', or 'armijo')
             step_size (float, optional): constant step size for 'constant' step type
             alpha (float, optional): initial step size for 'armijo' step type
             tau (float, optional): step size reduction factor for 'armijo' step type
             c1 (float, optional): sufficient decrease parameter for 'armijo' step type
         """
-        if step_type not in ['constant', 'armijo']:
+        if step_type not in ['constant', 'decay', 'armijo']:
             raise ValueError(f"step_type must be 'constant' or 'armijo', got {step_type}")
         defaults = dict(step_type=step_type, step_size=step_size,
                         alpha=alpha, tau=tau, c1=c1)
         super(GD, self).__init__(params, defaults)
+        if step_type == 'decay':
+            self.k = 1
 
     def __setstate__(self, state):
         super(GD, self).__setstate__(state)
@@ -49,6 +51,11 @@ class GD(Optimizer):
                 if step_type == 'constant':
                     alpha = group['step_size']
                     p += alpha * d
+
+                elif step_type == 'decay':
+                    alpha_k = group['step_size']/self.k
+                    p += alpha_k * d
+                    self.k += 1
                 
                 elif step_type == 'armijo':
                     if fn_cls is None:

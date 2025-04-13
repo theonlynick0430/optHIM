@@ -85,14 +85,15 @@ def run_optimization(function, x, optimizer, config):
     plot_loss = config.logging.get('plot_loss', True)
     plot_grad_norm = config.logging.get('plot_grad_norm', True)
 
-    x_star = function.solution()
-    f_star = None
-    if x_star is not None:
-        f_star = function(x_star)
-    else:
-        logger.warning("Function has no known solution, saving and plotting loss is disabled")
-        save_loss = False
-        plot_loss = False
+    x_star = function.x_soln()
+    f_star = function.f_soln()
+    if f_star is None:
+        if x_star is not None:
+            f_star = function(x_star)
+        else:
+            logger.warning("Function has no known solution, saving and plotting loss is disabled")
+            save_loss = False
+            plot_loss = False
 
     # initial metrics
     traj = []
@@ -104,7 +105,7 @@ def run_optimization(function, x, optimizer, config):
     if save_traj or plot_traj:
         traj.append(x.clone().detach().cpu().numpy())
     if save_loss or plot_loss:
-        loss_traj.append(torch.abs(f_star - f).item())    
+        loss_traj.append((f - f_star).item())    
     if save_grad_norm or plot_grad_norm:
         grad_norm_traj.append(initial_grad_norm)
 
@@ -128,7 +129,7 @@ def run_optimization(function, x, optimizer, config):
         # compute metrics
         loss = None
         if f_star is not None:
-            loss = torch.abs(f_star - f).item()
+            loss = (f - f_star).item()
         grad_norm = torch.max(torch.abs(x.grad)).item()
         if save_traj or plot_traj:
             traj.append(x.clone().detach().cpu().numpy())

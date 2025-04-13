@@ -27,8 +27,8 @@ class Func2(nn.Module):
         term = self.y - w * z_pow
         return torch.sum(term**2)
     
-    def solution(self):
-        """
-        Returns the solution x* of shape (2,).
-        """
+    def x_soln(self):
+        return None
+    
+    def f_soln(self):
         return None

@@ -67,8 +67,14 @@ class Quadratic(nn.Module):
         """
         return QuadraticFunction.apply(self.A, self.b, self.c, x)
     
-    def solution(self):
+    def x_soln(self):
         """
-        Returns the solution x* of shape (n,).
+        Returns the optimal solution.
+
+        Returns:
+            x_star (torch.Tensor): optimal solution of shape (n,)
         """
         return -torch.linalg.pinv(self.A) @ self.b
+    
+    def f_soln(self):
+        return None

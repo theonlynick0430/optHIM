@@ -27,8 +27,8 @@ class Func3(nn.Module):
         term3 = torch.sum((x[1:] - 1)**4)
         return term1 + term2 + term3 
     
-    def solution(self):
-        """
-        Returns the solution x* of shape (n,).
-        """
+    def x_soln(self):
+        return None
+    
+    def f_soln(self):
         return None

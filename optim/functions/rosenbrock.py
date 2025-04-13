@@ -22,8 +22,14 @@ class Rosenbrock(nn.Module):
         """
         return (1 - x[0]) ** 2 + 100 * (x[1] - x[0] ** 2) ** 2
     
-    def solution(self):
+    def x_soln(self):
         """
-        Returns the solution x* of shape (2,).
+        Returns the optimal solution.
+
+        Returns:
+            x_star (torch.Tensor): optimal solution of shape (2,)
         """
         return self.x_star
+    
+    def f_soln(self):
+        return None

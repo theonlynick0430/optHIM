@@ -3,6 +3,3 @@ _target_: optim.functions.quadratic.Quadratic
 
 # Function parameters
 data_file: ${hydra:runtime.cwd}/data/quadratic/quadratic2.npy
-
-# Initial point
-initial_point: [1.0, 1.0]
