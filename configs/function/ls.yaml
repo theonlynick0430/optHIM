@@ -1,0 +1,5 @@
+# Least squares function configuration
+_target_: optim.functions.ls.LeastSquares
+
+# Function parameters
+data_file: ${hydra:runtime.cwd}/data/sg/australian.npy

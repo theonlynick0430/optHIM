@@ -9,6 +9,7 @@ defaults:
 experiment:
   name: default_exp
   seed: 42
+  batch_size: 1
   max_iter: 100
   tol: 1e-6
   
