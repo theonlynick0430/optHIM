@@ -121,7 +121,7 @@ def run_optimization(function, x, optimizer, config):
     # optimization loop
     for i in range(max_iter):
         # step
-        optimizer.step(fn_cls=lambda: function(x))
+        optimizer.step(fn_cls=lambda: function(x), grad_cls=lambda: (optimizer.zero_grad(), function(x).backward(), None)[-1])
         optimizer.zero_grad()
         f = function(x)
         f.backward()
