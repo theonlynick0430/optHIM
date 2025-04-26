@@ -86,10 +86,10 @@ def create_optimizer(algorithm_config, function, w):
     algorithm_params = {k: v for k, v in algorithm_config.items() if not k.startswith('_')}
     
     # create optimizer instance
-    if algorithm_config._target_ == 'optim.algorithms.newton.Newton':
-        optimizer = algorithm_cls([w], function, **algorithm_params)
+    if algorithm_config._target_ == 'optHIM.algorithms.newton.Newton':
+        optimizer = algorithm_cls(w, function, **algorithm_params)
     else:
-        optimizer = algorithm_cls([w], **algorithm_params)
+        optimizer = algorithm_cls(w, **algorithm_params)
     return optimizer
 
 def run_optimization(function, optimizer, X_train, X_test, y_train, y_test, f_star, config):

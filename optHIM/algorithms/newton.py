@@ -5,14 +5,13 @@ import optHIM.algorithms.ls as ls
 
 
 class Newton(Optimizer):
-    def __init__(self, params, function, beta=1e-6, step_type='constant', step_size=1.0, 
+    def __init__(self, x, function, beta=1e-6, step_type='constant', step_size=1.0, 
                  alpha=1.0, tau=0.5, c1=1e-4):
         """
         Implements Newton's method with constant step size or backtracking line search.
         
         Args:
-            params (iterable): iterable of parameters to optimize or dicts defining
-                parameter groups
+            x (torch.Tensor): parameter to optimize
             function (nn.Module): function to compute Hessian of
             beta (float): positive scalar for Hessian modification
             step_type (str): type of step size to use ('constant' or 'armijo')
@@ -25,7 +24,8 @@ class Newton(Optimizer):
             raise ValueError(f"step_type must be 'constant' or 'armijo', got {step_type}")
         defaults = dict(beta=beta, step_type=step_type, step_size=step_size,
                         alpha=alpha, tau=tau, c1=c1)
-        super(Newton, self).__init__(params, defaults)
+        super(Newton, self).__init__([x], defaults)
+        self.x = x
         self.function = function
 
     def step(self, fn_cls=None):
@@ -36,35 +36,29 @@ class Newton(Optimizer):
             fn_cls (callable, optional): closure that reevaluates the function.
                 Required for backtracking line search.
         """
-        for group in self.param_groups:
-            step_type = group['step_type']
-            beta = group['beta']
-            for param in group['params']:
-                if param.grad is None:
-                    continue
-                
-                # x_k
-                p = param.data
-                # grad x_k
-                d_p = param.grad.data
-                # hess x_k
-                H = hessian(self.function, p)
-                # ensure PD => descent direction
-                H = self.correct_hess(H, beta)
-                # compute search direction
-                d = -torch.linalg.pinv(H) @ d_p
+        if self.x.grad is None:
+            return
+            
+        # x_k
+        x = self.x.data
+        # grad x_k
+        grad_x = self.x.grad.data
+        # hess x_k
+        hess_x = hessian(self.function, x)
+        # ensure PD => descent direction
+        hess_x = self.correct_hess(hess_x, self.param_groups[0]['beta'])
+        # compute search direction
+        d = -torch.linalg.pinv(hess_x) @ grad_x
 
-                # line search
-                if step_type == 'constant':
-                    alpha = group['step_size']
-                    p += alpha * d
-                elif step_type == 'armijo':
-                    if fn_cls is None:
-                        raise ValueError("fn_cls must be provided for backtracking line search")
-                    alpha = group['alpha']
-                    tau = group['tau']
-                    c1 = group['c1']
-                    ls.armijo(param, d, fn_cls, alpha, tau, c1) 
+        # line search
+        if self.param_groups[0]['step_type'] == 'constant':
+            alpha = self.param_groups[0]['step_size']
+            x += alpha * d
+        elif self.param_groups[0]['step_type'] == 'armijo':
+            if fn_cls is None:
+                raise ValueError("fn_cls must be provided for backtracking line search")
+            ls.armijo(self.x, d, fn_cls, self.param_groups[0]['alpha'], 
+                     self.param_groups[0]['tau'], self.param_groups[0]['c1']) 
 
     def correct_hess(self, H, beta=1e-6, max_iter=1e2):
         """

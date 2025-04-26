@@ -5,9 +5,16 @@ defaults:
   - function: quadratic
   - _self_
 
+hydra:
+  run:
+    dir: ${experiment.name}
+  sweep:
+    dir: ${experiment.name}
+    subdir: ""
+
 # Experiment settings
 experiment:
-  name: default_exp
+  name: outputs/default
   seed: 42
   batch_size: 1
   max_iter: 100

@@ -5,14 +5,13 @@ from collections import deque
 
 
 class LBFGS(Optimizer):
-    def __init__(self, params, m=5, eps_sy=1e-6, step_type='constant', step_size=1.0, 
+    def __init__(self, x, m=5, eps_sy=1e-6, step_type='constant', step_size=1.0, 
                  alpha=1.0, tau=0.5, c1=1e-4):
         """
         Implements L-BFGS quasi-Newton method with constant step size or backtracking line search.
         
         Args:
-            params (iterable): iterable of parameters to optimize or dicts defining
-                parameter groups
+            x (torch.Tensor): parameter to optimize
             m (int): memory of s, y buffers
             eps_sy (float, optional): skip update if s^T y <= eps_sy ||s|| ||y||
             step_type (str): type of step size to use ('constant' or 'armijo')
@@ -25,13 +24,15 @@ class LBFGS(Optimizer):
             raise ValueError(f"step_type must be 'constant' or 'armijo', got {step_type}")
         defaults = dict(m=m, eps_sy=eps_sy, step_type=step_type, step_size=step_size,
                         alpha=alpha, tau=tau, c1=c1)
-        super(LBFGS, self).__init__(params, defaults)
-        for group in self.param_groups:
-            for param in group['params']:
-                if param.requires_grad:
-                    # initialize buffers for s, y vectors
-                    self.state[param]['S'] = deque()
-                    self.state[param]['Y'] = deque()
+        super(LBFGS, self).__init__([x], defaults)
+        self.x = x
+        # initialize state
+        self.state = {
+            'x_prev': None,
+            'grad_x_prev': None,
+            'S': deque(),
+            'Y': deque()
+        }
 
     def two_loop_recursion(self, d_p, H_0, S, Y):
         """
@@ -68,60 +69,52 @@ class LBFGS(Optimizer):
             fn_cls (callable, optional): closure that reevaluates the function.
                 Required for backtracking line search.
         """
-        for group in self.param_groups:
-            m = group['m']
-            eps_sy = group['eps_sy']
-            step_type = group['step_type']
+        if self.x.grad is None:
+            return
             
-            for param in group['params']:
-                if param.grad is None:
-                    continue
+        # x_k
+        x = self.x.data
+        # grad x_k
+        grad_x = self.x.grad.data
+        n = x.numel()
+        I = torch.eye(n, device=x.device, dtype=x.dtype)
+        H_0 = I
 
-                # x_k
-                p = param.data
-                # grad x_k
-                d_p = param.grad.data
-                n = p.numel()
-                I = torch.eye(n, device=p.device, dtype=p.dtype)
-                H_0 = I
+        if self.state['x_prev'] is not None and self.state['grad_x_prev'] is not None:
+            # retrieve history
+            # x_{k-1}
+            x_prev = self.state['x_prev']
+            # grad x_{k-1}
+            grad_x_prev = self.state['grad_x_prev']
+            # s_{k-1} = x_k - x_{k-1}
+            s = x - x_prev
+            # y_{k-1} = grad x_k - grad x_{k-1}
+            y = grad_x - grad_x_prev
+            # curvature condition
+            curv_cond = y @ s
+            if curv_cond > self.param_groups[0]['eps_sy'] * torch.norm(s) * torch.norm(y):
+                # add to s, y buffers
+                self.state['S'].appendleft(s)
+                self.state['Y'].appendleft(y)
+                if len(self.state['S']) > self.param_groups[0]['m']:
+                    # flush out old information
+                    self.state['S'].pop()
+                    self.state['Y'].pop()
 
-                if 'p_prev' in self.state[param] and 'd_p_prev' in self.state[param]:
-                    # retrieve history for this param
-                    # x_{k-1}
-                    p_prev = self.state[param]['p_prev']
-                    # grad x_{k-1}
-                    d_p_prev = self.state[param]['d_p_prev']
-                    # s_{k-1} = x_k - x_{k-1}
-                    s = p - p_prev
-                    # y_{k-1} = grad x_k - grad x_{k-1}
-                    y = d_p - d_p_prev
-                    # curvature condition
-                    curv_cond = y @ s
-                    if curv_cond > eps_sy * torch.norm(s) * torch.norm(y):
-                        # add to s, y buffers
-                        self.state[param]['S'].appendleft(s)
-                        self.state[param]['Y'].appendleft(y)
-                        if len(self.state[param]['S']) > m:
-                            # flush out old information
-                            self.state[param]['S'].pop()
-                            self.state[param]['Y'].pop()
+        # compute search direction
+        d = -self.two_loop_recursion(grad_x, H_0, self.state['S'], self.state['Y'])
 
-                # compute search direction
-                d = -self.two_loop_recursion(d_p, H_0, self.state[param]['S'], self.state[param]['Y'])
+        # update history
+        self.state['x_prev'] = x.clone()
+        self.state['grad_x_prev'] = grad_x.clone()
 
-                # line search
-                if step_type == 'constant':
-                    alpha = group['step_size']
-                    p += alpha * d
-                elif step_type == 'armijo':
-                    if fn_cls is None:
-                        raise ValueError("fn_cls must be provided for armijo line search")
-                    alpha = group['alpha']
-                    tau = group['tau']
-                    c1 = group['c1']
-                    ls.armijo(param, d, fn_cls, alpha, tau, c1)    
-                
-                # update history
-                self.state[param]['p_prev'] = p.clone()
-                self.state[param]['d_p_prev'] = d_p.clone()
+        # line search
+        if self.param_groups[0]['step_type'] == 'constant':
+            alpha = self.param_groups[0]['step_size']
+            x += alpha * d
+        elif self.param_groups[0]['step_type'] == 'armijo':
+            if fn_cls is None:
+                raise ValueError("fn_cls must be provided for armijo line search")
+            ls.armijo(self.x, d, fn_cls, self.param_groups[0]['alpha'], 
+                     self.param_groups[0]['tau'], self.param_groups[0]['c1'])    
                 
