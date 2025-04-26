@@ -3,11 +3,11 @@ from torch.optim.optimizer import Optimizer
 import optHIM.algorithms.ls as ls
 
 
-class BFGS(Optimizer):
+class DFP(Optimizer):
     def __init__(self, x, eps_sy=1e-6, step_type='constant', step_size=1.0, 
                  alpha=1.0, tau=0.5, c1=1e-4, c2=0.9, alpha_high=1000.0, alpha_low=0.0, c=0.5):
         """
-        Implements BFGS quasi-Newton method with constant step size or backtracking line search.
+        Implements DFP quasi-Newton method with constant step size or backtracking line search.
         
         Args:
             x (torch.Tensor): parameter to optimize
@@ -26,7 +26,7 @@ class BFGS(Optimizer):
             raise ValueError(f"step_type must be 'constant', 'armijo', or 'wolfe', got {step_type}")
         defaults = dict(eps_sy=eps_sy, step_type=step_type, step_size=step_size,
                         alpha=alpha, tau=tau, c1=c1, c2=c2, alpha_high=alpha_high, alpha_low=alpha_low, c=c)
-        super(BFGS, self).__init__([x], defaults)
+        super(DFP, self).__init__([x], defaults)
         self.x = x
         # initialize state
         self.state = {
@@ -65,7 +65,7 @@ class BFGS(Optimizer):
             grad_x_prev = self.state['grad_x_prev']
             # inv_hess x_{k-1}
             inv_hess_x_prev = self.state['inv_hess_x_prev']
-            # compute BFGS update
+            # compute DFP update
             # s_{k-1} = x_k - x_{k-1}
             s = x - x_prev
             # y_{k-1} = grad x_k - grad x_{k-1}
@@ -73,10 +73,11 @@ class BFGS(Optimizer):
             # curvature condition
             curv_cond = y @ s
             if curv_cond > self.param_groups[0]['eps_sy'] * torch.norm(s) * torch.norm(y):
-                # update inv_hess x_k
                 rho = 1.0 / curv_cond
-                inv_hess_x = (I - rho * torch.einsum('i,j->ij', s, y)) @ inv_hess_x_prev @ (I - rho * torch.einsum('i,j->ij', y, s))
-                inv_hess_x = inv_hess_x + rho * torch.einsum('i,j->ij', s, s)
+                term1 = inv_hess_x_prev @ torch.einsum('i,j->ij', y, y) @ inv_hess_x_prev
+                term1 = term1 / (y @ inv_hess_x_prev @ y)
+                term2 = rho * torch.einsum('i,j->ij', s, s)
+                inv_hess_x = inv_hess_x_prev - term1 + term2
 
         # compute search direction
         d = -inv_hess_x @ grad_x
@@ -103,4 +104,3 @@ class BFGS(Optimizer):
             ls.wolfe(self.x, d, fn_cls, grad_cls, self.param_groups[0]['alpha'], 
                      self.param_groups[0]['alpha_high'], self.param_groups[0]['alpha_low'], 
                      self.param_groups[0]['c'], self.param_groups[0]['c1'], self.param_groups[0]['c2'])
-                
