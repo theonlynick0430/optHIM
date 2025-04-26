@@ -12,7 +12,8 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 from pathlib import Path
 import optHIM.utils.plot as plot_utils
-import time  # Add time module
+import time
+from torch.autograd.functional import hessian
 
 # set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -44,13 +45,12 @@ def create_function(function_config):
     # create function instance
     return function_cls(**function_params), initial_point
 
-def create_optimizer(algorithm_config, function, x):
+def create_optimizer(algorithm_config, x):
     """
     Create optimizer from config.
 
     Args:
         algorithm_config (dict): algorithm config
-        function (torch.nn.Module): function to evaluate
         x (torch.Tensor): input to optimize
 
     Returns:
@@ -60,10 +60,7 @@ def create_optimizer(algorithm_config, function, x):
     algorithm_cls = hydra.utils.get_class(algorithm_config._target_)
     algorithm_params = {k: v for k, v in algorithm_config.items() if not k.startswith('_')}
     # create optimizer instance
-    if algorithm_config._target_ == 'optHIM.algorithms.newton.Newton':
-        optimizer = algorithm_cls(x, function, **algorithm_params)
-    else:
-        optimizer = algorithm_cls(x, **algorithm_params)
+    optimizer = algorithm_cls(x, **algorithm_params)
     return optimizer
 
 def run_optimization(function, x, optimizer, config):
@@ -125,7 +122,11 @@ def run_optimization(function, x, optimizer, config):
     # optimization loop
     for i in range(max_iter):
         # step
-        optimizer.step(fn_cls=lambda: function(x), grad_cls=lambda: (optimizer.zero_grad(), function(x).backward(), None)[-1])
+        optimizer.step(
+            fn_cls=lambda: function(x), 
+            grad_cls=lambda: (optimizer.zero_grad(), function(x).backward(), None)[-1],
+            hess_cls=lambda: hessian(function, x)
+        )
         optimizer.zero_grad()
         f = function(x)
         f.backward()
@@ -219,7 +220,7 @@ def main(cfg: DictConfig):
     # create model
     function, x = create_function(cfg.function)
     # create optimizer
-    optimizer = create_optimizer(cfg.algorithm, function, x)
+    optimizer = create_optimizer(cfg.algorithm, x)
     # run optimization
     run_optimization(function, x, optimizer, cfg)
 

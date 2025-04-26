@@ -5,14 +5,13 @@ import optHIM.algorithms.ls as ls
 
 
 class Newton(Optimizer):
-    def __init__(self, x, function, beta=1e-6, step_type='constant', step_size=1.0, 
+    def __init__(self, x, beta=1e-6, step_type='constant', step_size=1.0, 
                  alpha=1.0, tau=0.5, c1=1e-4, c2=0.9, alpha_high=1000.0, alpha_low=0.0, c=0.5):
         """
         Implements Newton's method with constant step size or backtracking line search.
         
         Args:
             x (torch.Tensor): parameter to optimize
-            function (nn.Module): function to compute Hessian of
             beta (float): positive scalar for Hessian modification
             step_type (str): type of step size to use ('constant', 'armijo', or 'wolfe')
             step_size (float, optional): constant step size for 'constant' step type
@@ -30,9 +29,8 @@ class Newton(Optimizer):
                         alpha=alpha, tau=tau, c1=c1, c2=c2, alpha_high=alpha_high, alpha_low=alpha_low, c=c)
         super(Newton, self).__init__([x], defaults)
         self.x = x
-        self.function = function
 
-    def step(self, fn_cls=None, grad_cls=None):
+    def step(self, fn_cls=None, grad_cls=None, hess_cls=None):
         """
         Performs a single optimization step.
         
@@ -40,6 +38,8 @@ class Newton(Optimizer):
             fn_cls (callable, optional): closure that reevaluates the function.
                 Required for backtracking line search.
             grad_cls (callable, optional): closure that recomputes the gradients.
+                Required for Wolfe line search.
+            hess_cls (callable, optional): closure that recomputes the Hessian.
                 Required for Wolfe line search.
         """
         if self.x.grad is None:
@@ -50,7 +50,9 @@ class Newton(Optimizer):
         # grad x_k
         grad_x = self.x.grad.data
         # hess x_k
-        hess_x = hessian(self.function, x)
+        if hess_cls is None:
+            raise ValueError("hess_cls must be provided for Newton's method")
+        hess_x = hess_cls()
         # ensure PD => descent direction
         hess_x = self.correct_hess(hess_x, self.param_groups[0]['beta'])
         # compute search direction

@@ -13,7 +13,8 @@ from omegaconf import DictConfig, OmegaConf
 from pathlib import Path
 from collections import defaultdict
 import matplotlib.pyplot as plt
-import time  # Add time module
+import time
+from torch.autograd.functional import hessian
 
 # set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -70,13 +71,12 @@ def create_function(function_config, initial_weights):
     
     return function
 
-def create_optimizer(algorithm_config, function, w):
+def create_optimizer(algorithm_config, w):
     """
     Create optimizer from config.
     
     Args:
         algorithm_config (dict): algorithm config
-        function (torch.nn.Module): function to evaluate
         w (torch.Tensor): weights to optimize
         
     Returns:
@@ -87,10 +87,7 @@ def create_optimizer(algorithm_config, function, w):
     algorithm_params = {k: v for k, v in algorithm_config.items() if not k.startswith('_')}
     
     # create optimizer instance
-    if algorithm_config._target_ == 'optHIM.algorithms.newton.Newton':
-        optimizer = algorithm_cls(w, function, **algorithm_params)
-    else:
-        optimizer = algorithm_cls(w, **algorithm_params)
+    optimizer = algorithm_cls(w, **algorithm_params)
     return optimizer
 
 def run_optimization(function, optimizer, X_train, X_test, y_train, y_test, f_star, config):
@@ -146,7 +143,9 @@ def run_optimization(function, optimizer, X_train, X_test, y_train, y_test, f_st
         y_batch = y_train[indices]
         
         # step with batch data
-        optimizer.step(fn_cls=lambda: function(X_batch, y_batch))
+        optimizer.step(fn_cls=lambda: function(X_batch, y_batch),
+                       grad_cls=lambda: (optimizer.zero_grad(), function(X_batch, y_batch).backward(), None)[-1],
+                       hess_cls=lambda: hessian(function, X_batch, y_batch))
         optimizer.zero_grad()
         
         # evaluate on full training set
@@ -233,7 +232,7 @@ def main(cfg: DictConfig):
     function = create_function(cfg.function, w)
     
     # create optimizer
-    optimizer = create_optimizer(cfg.algorithm, function, w)
+    optimizer = create_optimizer(cfg.algorithm, w)
     
     # run optimization
     run_optimization(function, optimizer, X_train, X_test, y_train, y_test, f_star, cfg)
