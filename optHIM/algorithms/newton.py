@@ -43,19 +43,21 @@ class Newton(Optimizer):
                 if param.grad is None:
                     continue
                 
+                # x_k
                 p = param.data
+                # grad x_k
                 d_p = param.grad.data
-                # compute Hessian
+                # hess x_k
                 H = hessian(self.function, p)
                 # ensure PD => descent direction
                 H = self.correct_hess(H, beta)
                 # compute search direction
                 d = -torch.linalg.pinv(H) @ d_p
-                
+
+                # line search
                 if step_type == 'constant':
                     alpha = group['step_size']
                     p += alpha * d
-                
                 elif step_type == 'armijo':
                     if fn_cls is None:
                         raise ValueError("fn_cls must be provided for backtracking line search")

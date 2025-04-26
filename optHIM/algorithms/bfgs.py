@@ -41,22 +41,32 @@ class BFGS(Optimizer):
                 if param.grad is None:
                     continue
 
+                # x_k
                 p = param.data
+                # grad x_k
                 d_p = param.grad.data
                 n = p.numel()
                 I = torch.eye(n, device=p.device, dtype=p.dtype)
+                # hess x_k
                 H = I # H_0 = I
 
                 if param in self.state:
                     # retrieve history for this param
+                    # x_{k-1}
                     p_prev = self.state[param]['p_prev']
+                    # grad x_{k-1}
                     d_p_prev = self.state[param]['d_p_prev']
+                    # hess x_{k-1}
                     H_prev = self.state[param]['H_prev']
                     # compute BFGS update
+                    # s_{k-1} = x_k - x_{k-1}
                     s = p - p_prev
+                    # y_{k-1} = grad x_k - grad x_{k-1}
                     y = d_p - d_p_prev
+                    # curvature condition
                     curv_cond = y @ s
                     if curv_cond > eps_sy * torch.norm(s) * torch.norm(y):
+                        # update hess x_k
                         rho = 1.0 / curv_cond
                         H = (I - rho * torch.einsum('i,j->ij', s, y)) @ H_prev @ (I - rho * torch.einsum('i,j->ij', y, s))
                         H = H + rho * torch.einsum('i,j->ij', s, s)
@@ -64,10 +74,10 @@ class BFGS(Optimizer):
                 # compute search direction
                 d = -H @ d_p
 
+                # line search
                 if step_type == 'constant':
                     alpha = group['step_size']
                     p += alpha * d
-                
                 elif step_type == 'armijo':
                     if fn_cls is None:
                         raise ValueError("fn_cls must be provided for armijo line search")

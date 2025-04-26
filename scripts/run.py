@@ -203,7 +203,7 @@ def run_optimization(function, x, optimizer, config):
     logger.info(f"Results saved to {log_path}")
 
 
-@hydra.main(config_path="../configs", config_name="config")
+@hydra.main(config_path="../configs", config_name="config", version_base=None)
 def main(cfg: DictConfig):
     # print the configuration
     logger.info(f"Configuration: \n{OmegaConf.to_yaml(cfg)}")

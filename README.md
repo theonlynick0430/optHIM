@@ -1,12 +1,6 @@
-<div align="center">
-  <img src="assets/fig1.png" width="350" alt="Rosenbrock Trajectory"/>
-  <img src="assets/fig2.png" width="350" alt="Rosenbrock Loss"/>
-</div>
+# OptHIM
 
-
-# optim
-
-Collection of popular optimization algorithms in PyTorch.
+A collection of **H**ybrid **I**terative **M**ethods for optimization in PyTorch.
 
 
 ## Overview
@@ -34,13 +28,13 @@ Coming Soon:
 1. Clone the repository:
    ```bash
    git clone https://github.com/yourusername/optim.git
-   cd optim
+   cd optHIM
    ```
 
 2. Create a virtual environment (optional but recommended):
    ```bash
-   conda create -n optim python=3.10
-   conda activate optim
+   conda create -n optHIM python=3.10
+   conda activate optHIM
    ```
 
 3. Install the requirements:
@@ -58,6 +52,35 @@ The main script `scripts/run.py` uses Hydra for configuration management. Modify
 ```bash
 python scripts/run.py
 ```
+
+### Command Line Parameter Overrides
+
+You can override any configuration parameter directly from the command line. Here are some examples:
+
+1. Change algorithm and its parameters:
+```bash
+python scripts/run.py algorithm=gd algorithm.step_size=0.01
+python scripts/run.py algorithm=newton algorithm.step_type=armijo
+```
+
+2. Modify experiment settings:
+```bash
+python scripts/run.py experiment.name=test experiment.max_iter=200
+python scripts/run.py experiment.tol=1e-8
+```
+
+3. For machine learning tasks (using `run_ml.py`):
+```bash
+python scripts/run_ml.py algorithm=sgd experiment.batch_size=64
+python scripts/run_ml.py algorithm=sgd algorithm.step_size=0.1 experiment.name=test_run
+```
+
+You can combine multiple overrides in a single command:
+```bash
+python scripts/run.py algorithm=gd algorithm.step_size=0.1 experiment.name=combined_test experiment.max_iter=100
+```
+
+The command line overrides will be applied on top of the base configuration from the config files. The final configuration will be saved in the output directory specified by `experiment.name`.
 
 ### Configuration Structure
 
@@ -78,4 +101,4 @@ Nikhil Sridhar with inspiration from Prof. Albert Berahas's MATH 562 class @ the
 
 ## License
 
-MIT License 
+MIT License
