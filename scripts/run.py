@@ -11,7 +11,7 @@ import torch
 import hydra
 from omegaconf import DictConfig, OmegaConf
 from pathlib import Path
-import optim.utils.plot as plot_utils
+import optHIM.utils.plot as plot_utils
 
 # set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

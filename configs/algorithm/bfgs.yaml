@@ -1,5 +1,5 @@
 # BFGS Quasi-Newton Method configuration
-_target_: optim.algorithms.bfgs.BFGS
+_target_: optHIM.algorithms.bfgs.BFGS
 
 # Algorithm parameters
 eps_sy: 1e-6         # Skip update if s^T y <= eps_sy ||s|| ||y||

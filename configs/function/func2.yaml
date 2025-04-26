@@ -1,5 +1,5 @@
 # Func2 function configuration
-_target_: optim.functions.func2.Func2
+_target_: optHIM.functions.func2.Func2
 
 # Initial point
 initial_point: [1.0, 1.0]

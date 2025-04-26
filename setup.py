@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="optim",
+    name="optHIM",
     packages=[
-        package for package in find_packages() if package.startswith("optim")
+        package for package in find_packages() if package.startswith("optHIM")
     ],
 )

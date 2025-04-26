@@ -1,5 +1,5 @@
 # L-BFGS Quasi-Newton Method configuration
-_target_: optim.algorithms.lbfgs.LBFGS
+_target_: optHIM.algorithms.lbfgs.LBFGS
 
 # Algorithm parameters
 m: 5                 # Memory of s, y buffers

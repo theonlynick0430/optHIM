@@ -1,5 +1,5 @@
 from torch.optim.optimizer import Optimizer
-import optim.algorithms.ls as ls
+import optHIM.algorithms.ls as ls
 
 
 class GD(Optimizer):

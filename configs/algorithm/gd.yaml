@@ -1,5 +1,5 @@
 # Gradient Descent configuration
-_target_: optim.algorithms.gd.GD
+_target_: optHIM.algorithms.gd.GD
 
 # Algorithm parameters
 step_type: armijo    # Options: constant, diminish, armijo

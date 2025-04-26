@@ -1,5 +1,5 @@
 # Rosenbrock function configuration
-_target_: optim.functions.rosenbrock.Rosenbrock
+_target_: optHIM.functions.rosenbrock.Rosenbrock
 
 # Initial point
 initial_point: [-1.2, 1.0]

@@ -1,7 +1,7 @@
 import torch
 from torch.optim.optimizer import Optimizer
 from torch.autograd.functional import hessian
-import optim.algorithms.ls as ls
+import optHIM.algorithms.ls as ls
 
 
 class Newton(Optimizer):

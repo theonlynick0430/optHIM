@@ -1,5 +1,5 @@
 # Newton's Method configuration
-_target_: optim.algorithms.newton.Newton
+_target_: optHIM.algorithms.newton.Newton
 
 # Algorithm parameters
 beta: 1e-6           # Positive scalar for Hessian modification
