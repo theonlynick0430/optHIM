@@ -8,6 +8,6 @@ alpha: 1.0           # Initial step size for armijo step type
 tau: 0.5             # Step size reduction factor for armijo
 c1: 1e-4             # Sufficient decrease parameter for armijo 
 c2: 0.9             # Curvature condition parameter for wolfe step type
-alpha_high: 10.0   # Upper bound for step size for wolfe step type
+alpha_high: 1000.0   # Upper bound for step size for wolfe step type
 alpha_low: 0.0       # Lower bound for step size for wolfe step type
 c: 0.5              # Interpolation parameter for wolfe step type
