@@ -1,0 +1,8 @@
+# QP1 function configuration
+_target_: optHIM.functions.qp1.QP1
+
+# Penalty parameter
+nu: 1.0
+
+# Initial point
+initial_point: [2.0, 2.0]
