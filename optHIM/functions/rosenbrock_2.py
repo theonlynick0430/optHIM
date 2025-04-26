@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch
     
 
-class Rosenbrock(nn.Module):
+class Rosenbrock2(nn.Module):
     def __init__(self):
         """
         Initialize the Rosenbrock function:
