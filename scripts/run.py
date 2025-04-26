@@ -12,6 +12,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 from pathlib import Path
 import optHIM.utils.plot as plot_utils
+import time  # Add time module
 
 # set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -118,6 +119,9 @@ def run_optimization(function, x, optimizer, config):
     logger.info(f"Initial gradient norm: {initial_grad_norm}")
     logger.info(f"Convergence threshold: {conv_thresh}")
     
+    # Start timing the optimization loop
+    start_time = time.time()
+    
     # optimization loop
     for i in range(max_iter):
         # step
@@ -146,6 +150,11 @@ def run_optimization(function, x, optimizer, config):
         if grad_norm <= conv_thresh:
             logger.info(f"Converged at iteration {i+1} with gradient norm {grad_norm:.6f} <= {conv_thresh:.6f}")
             break
+    
+    # End timing the optimization loop
+    end_time = time.time()
+    opt_time = end_time - start_time
+    logger.info(f"Optimization loop time: {opt_time:.2f} seconds")
     
     # final results
     logger.info(f"Optimization completed")

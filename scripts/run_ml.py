@@ -13,6 +13,7 @@ from omegaconf import DictConfig, OmegaConf
 from pathlib import Path
 from collections import defaultdict
 import matplotlib.pyplot as plt
+import time  # Add time module
 
 # set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -134,6 +135,9 @@ def run_optimization(function, optimizer, X_train, X_test, y_train, y_test, f_st
     logger.info(f"Initial train accuracy: {metrics['train_acc'][-1]}")
     logger.info(f"Initial test accuracy: {metrics['test_acc'][-1]}")
     
+    # Start timing the optimization loop
+    start_time = time.time()
+    
     # optimization loop
     while grad_evals < max_grad_evals:
         # get random batch
@@ -164,6 +168,11 @@ def run_optimization(function, optimizer, X_train, X_test, y_train, y_test, f_st
             logger.info(f"Test loss: {metrics['test_loss'][-1]}")
             logger.info(f"Train accuracy: {metrics['train_acc'][-1]}")
             logger.info(f"Test accuracy: {metrics['test_acc'][-1]}")
+    
+    # End timing the optimization loop
+    end_time = time.time()
+    opt_time = end_time - start_time
+    logger.info(f"Optimization loop time: {opt_time:.2f} seconds")
     
     # final results
     logger.info(f"Optimization completed")
