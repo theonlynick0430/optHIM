@@ -1,10 +1,10 @@
 import torch
-from torch.optim.optimizer import Optimizer
+from optHIM.algorithms.base import BaseOptimizer
 import optHIM.algorithms.ls as ls
 from collections import deque
 
 
-class LBFGS(Optimizer):
+class LBFGS(BaseOptimizer):
     def __init__(self, x, m=5, eps_sy=1e-6, step_type='constant', step_size=1.0, 
                  alpha=1.0, tau=0.5, c1=1e-4, c2=0.9, alpha_high=1000.0, alpha_low=0.0, c=0.5):
         """
@@ -65,7 +65,7 @@ class LBFGS(Optimizer):
             r = r + s * (alphas[m - i - 1] - beta)
         return r
 
-    def step(self, fn_cls=None, grad_cls=None):
+    def step(self, fn_cls=None, grad_cls=None, hess_cls=None):
         """
         Performs a single optimization step.
         
@@ -74,6 +74,7 @@ class LBFGS(Optimizer):
                 Required for backtracking line search.
             grad_cls (callable, optional): closure that recomputes the gradients.
                 Required for Wolfe line search.
+            hess_cls (callable, optional): Not required for this optimizer.
         """
         if self.x.grad is None:
             return

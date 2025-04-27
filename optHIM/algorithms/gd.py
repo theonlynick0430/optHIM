@@ -1,8 +1,8 @@
-from torch.optim.optimizer import Optimizer
+from optHIM.algorithms.base import BaseOptimizer
 import optHIM.algorithms.ls as ls
 
 
-class GD(Optimizer):
+class GD(BaseOptimizer):
     def __init__(self, x, step_type='constant', step_size=1e-3, 
                  alpha=1.0, tau=0.5, c1=1e-4, c2=0.9, alpha_high=1000.0, 
                  alpha_low=0.0, c=0.5):
@@ -34,7 +34,7 @@ class GD(Optimizer):
     def __setstate__(self, state):
         super(GD, self).__setstate__(state)
 
-    def step(self, fn_cls=None, grad_cls=None):
+    def step(self, fn_cls=None, grad_cls=None, hess_cls=None):
         """
         Performs a single optimization step.
         
@@ -43,6 +43,7 @@ class GD(Optimizer):
                 Required for backtracking line search.
             grad_cls (callable, optional): closure that recomputes the gradients.
                 Required for Wolfe line search.
+            hess_cls (callable, optional): Not required for this optimizer.
         """
         if self.x.grad is None:
             return

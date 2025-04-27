@@ -1,4 +1,3 @@
-import torch
 
 
 def armijo(x, d, fn_cls, alpha=1.0, tau=0.5, c1=1e-4, max_iter=1e2):

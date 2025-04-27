@@ -1,10 +1,9 @@
 import torch
-from torch.optim.optimizer import Optimizer
-from torch.autograd.functional import hessian
 import optHIM.algorithms.ls as ls
+from optHIM.algorithms.base import BaseOptimizer
 
 
-class Newton(Optimizer):
+class Newton(BaseOptimizer):
     def __init__(self, x, beta=1e-6, step_type='constant', step_size=1.0, 
                  alpha=1.0, tau=0.5, c1=1e-4, c2=0.9, alpha_high=1000.0, alpha_low=0.0, c=0.5):
         """
@@ -30,16 +29,15 @@ class Newton(Optimizer):
         super(Newton, self).__init__([x], defaults)
         self.x = x
 
-    def step(self, fn_cls=None, grad_cls=None, hess_cls=None):
+    def step(self, hess_cls, fn_cls=None, grad_cls=None):
         """
         Performs a single optimization step.
         
         Args:
+            hess_cls (callable): closure that recomputes the Hessian
             fn_cls (callable, optional): closure that reevaluates the function.
                 Required for backtracking line search.
             grad_cls (callable, optional): closure that recomputes the gradients.
-                Required for Wolfe line search.
-            hess_cls (callable, optional): closure that recomputes the Hessian.
                 Required for Wolfe line search.
         """
         if self.x.grad is None:
