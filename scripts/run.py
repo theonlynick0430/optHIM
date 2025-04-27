@@ -20,42 +20,47 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 
-def get_initial_point(target):
+def get_initial_point(target, function_params=None):
     """
     Get initial point based on function type.
     
     Args:
         target (str): function target path
+        function_params (dict, optional): function parameters including data file
         
     Returns:
         list or None: initial point coordinates
     """
-    if 'quad_10_10' in target or 'quad_10_1000' in target:
-        # Problem 1 & 2: n = 10
-        rng = np.random.default_rng(0)
-        return (20 * rng.random(10) - 10).tolist()
-    elif 'quad_1000_10' in target or 'quad_1000_1000' in target:
-        # Problem 3 & 4: n = 1000
-        rng = np.random.default_rng(0)
-        return (20 * rng.random(1000) - 10).tolist()
-    elif 'quartic_1' in target or 'quartic_2' in target:
-        # Problem 5 & 6: quartic
+    # First check if this is a quadratic function
+    if 'quadratic' in target.lower():
+        if function_params and 'data_file' in function_params:
+            data_file = function_params['data_file']
+            if 'P1_quad_10_10' in data_file:
+                rng = np.random.default_rng(0)
+                return (20 * rng.random(10) - 10).tolist()
+            elif 'P2_quad_10_1000' in data_file:
+                rng = np.random.default_rng(0)
+                return (20 * rng.random(10) - 10).tolist()
+            elif 'P3_quad_1000_10' in data_file:
+                rng = np.random.default_rng(0)
+                return (20 * rng.random(1000) - 10).tolist()
+            elif 'P4_quad_1000_1000' in data_file:
+                rng = np.random.default_rng(0)
+                return (20 * rng.random(1000) - 10).tolist()
+    
+    # Handle other function types
+    if 'quartic_1' in target or 'quartic_2' in target:
         return [np.cos(np.deg2rad(70)), np.sin(np.deg2rad(70)), 
                 np.cos(np.deg2rad(70)), np.sin(np.deg2rad(70))]
     elif 'rosenbrock_2' in target:
-        # Problem 7: Rosenbrock n=2
         return [-1.2, 1.0]
     elif 'rosenbrock_100' in target:
-        # Problem 8: Rosenbrock n=100
         return [-1.2] + [1.0] * 99
     elif 'exponential_10' in target:
-        # Problem 10: Exponential n=10
         return [1.0] + [0.0] * 9
     elif 'exponential_1000' in target:
-        # Problem 11: Exponential n=1000
         return [1.0] + [0.0] * 999
     elif 'genhumps_5' in target:
-        # Problem 12: Generalized Humps
         return [-506.2] + [506.2] * 4
     return None
 
@@ -73,8 +78,8 @@ def create_function(function_config):
     function_cls = hydra.utils.get_class(function_config._target_)
     function_params = {k: v for k, v in function_config.items() if not k.startswith('_')}
     
-    # Get initial point based on function type
-    initial_point = get_initial_point(function_config._target_)
+    # get initial point based on function type and parameters
+    initial_point = get_initial_point(function_config._target_, function_params)
     
     # load function parameters from data file if specified
     if 'data_file' in function_params:
@@ -84,7 +89,7 @@ def create_function(function_config):
         function_params.update(data)
         del function_params['data_file']
     
-    # Set the initial point if we determined one
+    # set the initial point if we determined one
     if initial_point is not None:
         function_params['initial_point'] = initial_point
     
