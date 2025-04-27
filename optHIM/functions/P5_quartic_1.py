@@ -1,14 +1,14 @@
 import torch
 import torch.nn as nn
 
-class Quartic2(nn.Module):
+class Quartic1(nn.Module):
     def __init__(self):
         """
         Initialize the quartic function:
           f(x) = ½ x^T x + (σ/4) (x^T Q x)^2,
-        where Q ∈ ℝ^{4×4}, σ = 1e4.
+        where Q ∈ ℝ^{4×4}, σ = 1e-4.
         """
-        super(Quartic2, self).__init__()
+        super(Quartic1, self).__init__()
         Q = torch.tensor([
             [5.0, 1.0, 0.0, 0.5],
             [1.0, 4.0, 0.5, 0.0],
@@ -17,7 +17,7 @@ class Quartic2(nn.Module):
         ], dtype=torch.float32)
         self.register_buffer('Q', Q)
         # quartic coefficient
-        self.sigma = 1e4
+        self.sigma = 1e-4
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -37,7 +37,7 @@ class Quartic2(nn.Module):
         """
         Returns the minimizer x* = 0-vector.
         """
-        return torch.zeros(4, dtype=torch.float32)
+        return None
 
     def f_soln(self):
         """

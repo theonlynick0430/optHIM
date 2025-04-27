@@ -9,8 +9,6 @@ class Rosenbrock100(nn.Module):
         """
         super(Rosenbrock100, self).__init__()
         self.n = 100
-        # the true minimizer is x* = [1,1,...,1] of length 100
-        self.register_buffer('x_star', torch.ones(self.n, dtype=torch.float32))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -33,7 +31,7 @@ class Rosenbrock100(nn.Module):
         """
         Returns the known minimizer x* = [1,...,1].
         """
-        return self.x_star
+        return None
 
     def f_soln(self):
         return None

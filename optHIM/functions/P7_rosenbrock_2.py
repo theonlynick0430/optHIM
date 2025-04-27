@@ -8,8 +8,7 @@ class Rosenbrock2(nn.Module):
         Initialize the Rosenbrock function:
         f(x) = (1-x1)^2 + 100*(x2-x1^2)^2
         """
-        super(Rosenbrock, self).__init__()
-        self.register_buffer('x_star', torch.tensor([1.0, 1.0], dtype=torch.float32))
+        super(Rosenbrock2, self).__init__()
 
     def forward(self, x):
         """
@@ -29,7 +28,7 @@ class Rosenbrock2(nn.Module):
         Returns:
             x_star (torch.Tensor): optimal solution of shape (2,)
         """
-        return self.x_star
+        return None
     
     def f_soln(self):
         return None

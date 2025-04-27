@@ -20,6 +20,45 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 
+def get_initial_point(target):
+    """
+    Get initial point based on function type.
+    
+    Args:
+        target (str): function target path
+        
+    Returns:
+        list or None: initial point coordinates
+    """
+    if 'quad_10_10' in target or 'quad_10_1000' in target:
+        # Problem 1 & 2: n = 10
+        rng = np.random.default_rng(0)
+        return (20 * rng.random(10) - 10).tolist()
+    elif 'quad_1000_10' in target or 'quad_1000_1000' in target:
+        # Problem 3 & 4: n = 1000
+        rng = np.random.default_rng(0)
+        return (20 * rng.random(1000) - 10).tolist()
+    elif 'quartic_1' in target or 'quartic_2' in target:
+        # Problem 5 & 6: quartic
+        return [np.cos(np.deg2rad(70)), np.sin(np.deg2rad(70)), 
+                np.cos(np.deg2rad(70)), np.sin(np.deg2rad(70))]
+    elif 'rosenbrock_2' in target:
+        # Problem 7: Rosenbrock n=2
+        return [-1.2, 1.0]
+    elif 'rosenbrock_100' in target:
+        # Problem 8: Rosenbrock n=100
+        return [-1.2] + [1.0] * 99
+    elif 'exponential_10' in target:
+        # Problem 10: Exponential n=10
+        return [1.0] + [0.0] * 9
+    elif 'exponential_1000' in target:
+        # Problem 11: Exponential n=1000
+        return [1.0] + [0.0] * 999
+    elif 'genhumps_5' in target:
+        # Problem 12: Generalized Humps
+        return [-506.2] + [506.2] * 4
+    return None
+
 def create_function(function_config):
     """
     Create function from config.
@@ -33,6 +72,10 @@ def create_function(function_config):
     # extract function class and parameters
     function_cls = hydra.utils.get_class(function_config._target_)
     function_params = {k: v for k, v in function_config.items() if not k.startswith('_')}
+    
+    # Get initial point based on function type
+    initial_point = get_initial_point(function_config._target_)
+    
     # load function parameters from data file if specified
     if 'data_file' in function_params:
         data = np.load(function_params['data_file'], allow_pickle=True).item()
@@ -40,8 +83,15 @@ def create_function(function_config):
             data[key] = torch.tensor(value, dtype=torch.float32)
         function_params.update(data)
         del function_params['data_file']
+    
+    # Set the initial point if we determined one
+    if initial_point is not None:
+        function_params['initial_point'] = initial_point
+    
     # remove initial_point from function parameters if present
-    initial_point = torch.tensor(function_params.pop('initial_point', None), dtype=torch.float32, requires_grad=True)
+    initial_point = torch.tensor(function_params.pop('initial_point', None), 
+                               dtype=torch.float32, requires_grad=True)
+    
     # create function instance
     return function_cls(**function_params), initial_point
 
