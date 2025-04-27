@@ -31,9 +31,6 @@ class GD(BaseOptimizer):
         if step_type == 'diminish':
             self.k = 1
 
-    def __setstate__(self, state):
-        super(GD, self).__setstate__(state)
-
     def step(self, fn_cls=None, grad_cls=None, hess_cls=None):
         """
         Performs a single optimization step.

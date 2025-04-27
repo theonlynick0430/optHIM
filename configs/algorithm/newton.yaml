@@ -2,13 +2,13 @@
 _target_: optHIM.algorithms.newton.Newton
 
 # Algorithm parameters
-beta: 1e-6           # Positive scalar for Hessian modification
-step_type: armijo    # Options: constant, armijo, wolfe
-step_size: 1.0       # Used for constant step type
-alpha: 1.0           # Initial step size for armijo step type
-tau: 0.5             # Step size reduction factor for armijo
-c1: 1e-4             # Sufficient decrease parameter for armijo
-c2: 0.9             # Curvature condition parameter for wolfe step type
-alpha_high: 1000.0   # Upper bound for step size for wolfe step type
-alpha_low: 0.0       # Lower bound for step size for wolfe step type
-c: 0.5              # Interpolation parameter for wolfe step type
+beta:        1e-6     # Positive scalar for Hessian modification
+step_type:   armijo   # Type of step size: constant, armijo, or wolfe
+step_size:   1.0      # Step size for constant step type
+alpha:       1.0      # Initial step size for armijo/wolfe line search
+tau:         0.5      # Step size reduction factor for armijo
+c1:          1e-4     # Sufficient decrease parameter for armijo/wolfe
+c2:          0.9      # Curvature condition parameter for wolfe
+alpha_high:  1000.0   # Upper bound for step size in wolfe
+alpha_low:   0.0      # Lower bound for step size in wolfe
+c:           0.5      # Interpolation parameter for wolfe

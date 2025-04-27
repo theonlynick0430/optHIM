@@ -81,9 +81,9 @@ class BFGS(BaseOptimizer):
         d = -inv_hess_x @ grad_x
 
         # update history
-        self.state['x_prev'] = x.clone()
-        self.state['grad_x_prev'] = grad_x.clone()
-        self.state['inv_hess_x_prev'] = inv_hess_x.clone()
+        self.state['x_prev'] = x.clone().detach()
+        self.state['grad_x_prev'] = grad_x.clone().detach()
+        self.state['inv_hess_x_prev'] = inv_hess_x.clone().detach()
 
         # line search
         if self.param_groups[0]['step_type'] == 'constant':

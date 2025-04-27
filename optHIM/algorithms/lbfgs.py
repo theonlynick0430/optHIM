@@ -107,8 +107,8 @@ class LBFGS(BaseOptimizer):
         d = -self.two_loop_recursion(grad_x, I, self.state['S'], self.state['Y'])
 
         # update history
-        self.state['x_prev'] = x.clone()
-        self.state['grad_x_prev'] = grad_x.clone()
+        self.state['x_prev'] = x.clone().detach()
+        self.state['grad_x_prev'] = grad_x.clone().detach()
 
         # line search
         if self.param_groups[0]['step_type'] == 'constant':
