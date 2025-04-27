@@ -40,19 +40,15 @@ class Newton(BaseOptimizer):
             grad_cls (callable, optional): closure that recomputes the gradients.
                 Required for Wolfe line search.
         """
-        if self.x.grad is None:
-            return
-            
         # x_k
         x = self.x.data
         # grad x_k
         grad_x = self.x.grad.data
         # hess x_k
-        if hess_cls is None:
-            raise ValueError("hess_cls must be provided for Newton's method")
         hess_x = hess_cls()
         # ensure PD => descent direction
         hess_x = self.correct_hess(hess_x, self.param_groups[0]['beta'])
+        
         # compute search direction
         d = -torch.linalg.pinv(hess_x) @ grad_x
 

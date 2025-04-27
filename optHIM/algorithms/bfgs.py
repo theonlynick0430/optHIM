@@ -32,7 +32,8 @@ class BFGS(BaseOptimizer):
         self.state = {
             'x_prev': None,
             'grad_x_prev': None,
-            'inv_hess_x_prev': None
+            # start approximation of inverse Hessian as identity matrix
+            'inv_hess_x_prev': torch.eye(x.numel(), device=x.device, dtype=x.dtype)
         }
 
     def step(self, fn_cls=None, grad_cls=None, hess_cls=None):
@@ -46,19 +47,15 @@ class BFGS(BaseOptimizer):
                 Required for Wolfe line search.
             hess_cls (callable, optional): Not required for this optimizer.
         """
-        if self.x.grad is None:
-            return
-            
         # x_k
         x = self.x.data
         # grad x_k
         grad_x = self.x.grad.data
-        n = x.numel()
-        I = torch.eye(n, device=x.device, dtype=x.dtype)
+        # if BFGS update is skipped, use previous approximation
         # inv_hess x_k
-        inv_hess_x = I
+        inv_hess_x = self.state['inv_hess_x_prev']
 
-        if self.state['x_prev'] is not None and self.state['grad_x_prev'] is not None:
+        if self.state['x_prev'] is not None:
             # retrieve history
             # x_{k-1}
             x_prev = self.state['x_prev']
@@ -75,6 +72,7 @@ class BFGS(BaseOptimizer):
             curv_cond = y @ s
             if curv_cond > self.param_groups[0]['eps_sy'] * torch.norm(s) * torch.norm(y):
                 # update inv_hess x_k
+                I = torch.eye(x.numel(), device=x.device, dtype=x.dtype)
                 rho = 1.0 / curv_cond
                 inv_hess_x = (I - rho * torch.einsum('i,j->ij', s, y)) @ inv_hess_x_prev @ (I - rho * torch.einsum('i,j->ij', y, s))
                 inv_hess_x = inv_hess_x + rho * torch.einsum('i,j->ij', s, s)
@@ -85,7 +83,7 @@ class BFGS(BaseOptimizer):
         # update history
         self.state['x_prev'] = x.clone()
         self.state['grad_x_prev'] = grad_x.clone()
-        self.state['inv_hess_x_prev'] = inv_hess_x
+        self.state['inv_hess_x_prev'] = inv_hess_x.clone()
 
         # line search
         if self.param_groups[0]['step_type'] == 'constant':

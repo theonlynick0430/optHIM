@@ -76,18 +76,12 @@ class LBFGS(BaseOptimizer):
                 Required for Wolfe line search.
             hess_cls (callable, optional): Not required for this optimizer.
         """
-        if self.x.grad is None:
-            return
-            
         # x_k
         x = self.x.data
         # grad x_k
         grad_x = self.x.grad.data
-        n = x.numel()
-        I = torch.eye(n, device=x.device, dtype=x.dtype)
-        H_0 = I
 
-        if self.state['x_prev'] is not None and self.state['grad_x_prev'] is not None:
+        if self.state['x_prev'] is not None:
             # retrieve history
             # x_{k-1}
             x_prev = self.state['x_prev']
@@ -109,7 +103,8 @@ class LBFGS(BaseOptimizer):
                     self.state['Y'].pop()
 
         # compute search direction
-        d = -self.two_loop_recursion(grad_x, H_0, self.state['S'], self.state['Y'])
+        I = torch.eye(x.numel(), device=x.device, dtype=x.dtype)
+        d = -self.two_loop_recursion(grad_x, I, self.state['S'], self.state['Y'])
 
         # update history
         self.state['x_prev'] = x.clone()
