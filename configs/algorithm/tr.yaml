@@ -9,4 +9,4 @@ c1:        0.25     # Lower bound for acceptance ratio (0 < c1 < c2 < 1)
 c2:        0.75     # Upper bound for acceptance ratio (0 < c1 < c2 < 1)
 c3:        1e-6     # Skip sr1 update unless ||(y-Bs)^T s|| >= c3 ||y-Bs|| ||s||
 tol:       1e-6     # Tolerance for CG convergence
-max_iter:  10       # Maximum number of CG iterations
+max_iter:  10       # Maximum number of CG iterations (theoretically <= dim of space)

@@ -36,11 +36,11 @@ class GD(BaseOptimizer):
         Performs a single optimization step.
         
         Args:
-            fn_cls (callable, optional): closure that reevaluates the function.
+            fn_cls (callable, optional): closure that returns the function evaluated at given point. 
                 Required for backtracking line search.
-            grad_cls (callable, optional): closure that recomputes the gradients.
+            grad_cls (callable, optional): closure (void) that updates the gradient at given point.
                 Required for Wolfe line search.
-            hess_cls (callable, optional): Not required for this optimizer.
+            hess_cls (callable, optional): not required for this optimizer
         """
         if self.x.grad is None:
             return

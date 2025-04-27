@@ -5,9 +5,9 @@ def armijo(x, d, fn_cls, alpha=1.0, tau=0.5, c1=1e-4, max_iter=1e2):
     Performs armijo backtracking line search to find an acceptable step size.
     
     Args:
-        x (nn.Parameter): parameter to be updated
+        x (torch.Tensor): parameter to be optimized
         d (torch.Tensor): search direction
-        fn_cls (callable): closure that reevaluates the function
+        fn_cls (callable): closure that returns the function evaluated at given point
         alpha (float, optional): initial step size
         tau (float, optional): step size reduction factor
         c1 (float, optional): sufficient decrease parameter
@@ -18,7 +18,7 @@ def armijo(x, d, fn_cls, alpha=1.0, tau=0.5, c1=1e-4, max_iter=1e2):
     """
     x0 = x.data.clone()
     grad_x0 = x.grad.data.clone()
-    f0 = fn_cls()
+    f0 = fn_cls(x0) # disable gradient computation
     
     # backtracking line search
     for _ in range(int(max_iter)):
@@ -27,7 +27,7 @@ def armijo(x, d, fn_cls, alpha=1.0, tau=0.5, c1=1e-4, max_iter=1e2):
                         
         # check armijo condition
         armijo_rhs = f0 + c1 * alpha * grad_x0 @ d
-        f = fn_cls()
+        f = fn_cls(x.data) # disable gradient computation
         if f <= armijo_rhs:
             return alpha
         
@@ -41,10 +41,10 @@ def wolfe(x, d, fn_cls, grad_cls, alpha=1.0, alpha_high=1000.0, alpha_low=0.0, c
     Performs Wolfe line search to find an acceptable step size.
     
     Args:
-        x (nn.Parameter): parameter to be updated
+        x (torch.Tensor): parameter to be optimized
         d (torch.Tensor): search direction
-        fn_cls (callable): closure that reevaluates the function
-        grad_cls (callable): closure that recomputes the gradients
+        fn_cls (callable): closure that returns the function evaluated at given point
+        grad_cls (callable): closure (void) that updates the gradient at given point
         alpha (float, optional): initial step size
         alpha_high (float, optional): upper bound for step size
         alpha_low (float, optional): lower bound for step size
@@ -58,18 +58,17 @@ def wolfe(x, d, fn_cls, grad_cls, alpha=1.0, alpha_high=1000.0, alpha_low=0.0, c
     """
     x0 = x.data.clone()
     grad_x0 = x.grad.data.clone()
-    f0 = fn_cls()
+    f0 = fn_cls(x0) # disable gradient computation
         
     for _ in range(int(max_iter)):
         # update parameter with current step size
         x.data = x0 + alpha * d
-        # evaluate function and gradients at new point
-        f = fn_cls()
         
         # check armijo condition
         armijo_rhs = f0 + c1 * alpha * grad_x0 @ d
+        f = fn_cls(x.data) # disable gradient computation
         if f <= armijo_rhs:
-            grad_cls()
+            grad_cls(x) # enable gradient computation
             grad_x = x.grad.data
             # check curvature condition
             if grad_x @ d >= c2 * grad_x0 @ d:

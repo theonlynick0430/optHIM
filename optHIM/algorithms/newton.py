@@ -34,10 +34,10 @@ class Newton(BaseOptimizer):
         Performs a single optimization step.
         
         Args:
-            hess_cls (callable): closure that recomputes the Hessian
-            fn_cls (callable, optional): closure that reevaluates the function.
+            hess_cls (callable): closure that returns the Hessian evaluated at given point
+            fn_cls (callable, optional): closure that returns the function evaluated at given point. 
                 Required for backtracking line search.
-            grad_cls (callable, optional): closure that recomputes the gradients.
+            grad_cls (callable, optional): closure (void) that updates the gradient at given point.
                 Required for Wolfe line search.
         """
         # x_k
@@ -45,7 +45,7 @@ class Newton(BaseOptimizer):
         # grad x_k
         grad_x = self.x.grad.data
         # hess x_k
-        hess_x = hess_cls()
+        hess_x = hess_cls(x)
         # ensure PD => descent direction
         hess_x = self.correct_hess(hess_x, self.param_groups[0]['beta'])
         

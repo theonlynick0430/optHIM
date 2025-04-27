@@ -178,9 +178,9 @@ def run_optimization(function, x, optimizer, config):
     for i in range(max_iter):
         # step
         optimizer.step(
-            fn_cls=lambda: function(x), 
-            grad_cls=lambda: (optimizer.zero_grad(), function(x).backward(), None)[-1],
-            hess_cls=lambda: hessian(function, x)
+            fn_cls=lambda _x: function(_x), 
+            grad_cls=lambda _x: (optimizer.zero_grad(), function(_x).backward(), None)[-1],
+            hess_cls=lambda _x: hessian(function, _x)
         )
         optimizer.zero_grad()
         f = function(x)

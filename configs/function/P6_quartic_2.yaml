@@ -1,1 +1,4 @@
+# Quartic function configuration
 _target_: optHIM.functions.P6_quartic_2.Quartic2
+
+# Initial point generated in code

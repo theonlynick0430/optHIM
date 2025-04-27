@@ -1,1 +1,4 @@
+# Rosenbrock function configuration
 _target_: optHIM.functions.P8_rosenbrock_100.Rosenbrock100
+
+# Initial point generated in code

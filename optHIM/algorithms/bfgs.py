@@ -41,11 +41,11 @@ class BFGS(BaseOptimizer):
         Performs a single optimization step.
         
         Args:
-            fn_cls (callable, optional): closure that reevaluates the function.
+            fn_cls (callable, optional): closure that returns the function evaluated at given point. 
                 Required for backtracking line search.
-            grad_cls (callable, optional): closure that recomputes the gradients.
+            grad_cls (callable, optional): closure (void) that updates the gradient at given point.
                 Required for Wolfe line search.
-            hess_cls (callable, optional): Not required for this optimizer.
+            hess_cls (callable, optional): not required for this optimizer
         """
         # x_k
         x = self.x.data
@@ -81,9 +81,9 @@ class BFGS(BaseOptimizer):
         d = -inv_hess_x @ grad_x
 
         # update history
-        self.state['x_prev'] = x.clone().detach()
-        self.state['grad_x_prev'] = grad_x.clone().detach()
-        self.state['inv_hess_x_prev'] = inv_hess_x.clone().detach()
+        self.state['x_prev'] = x.clone()
+        self.state['grad_x_prev'] = grad_x.clone()
+        self.state['inv_hess_x_prev'] = inv_hess_x.clone()
 
         # line search
         if self.param_groups[0]['step_type'] == 'constant':

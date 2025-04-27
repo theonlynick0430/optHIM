@@ -3,3 +3,5 @@ _target_: optHIM.functions.quadratic.Quadratic
 
 # Function parameters
 data_file: ${hydra:runtime.cwd}/data/quadratic/P2_quad_10_1000.npy
+
+# Initial point generated in code

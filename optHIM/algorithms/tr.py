@@ -1,4 +1,5 @@
 from optHIM.algorithms.base import BaseOptimizer
+from optHIM.utils.solvers import quadratic_2D
 import torch
 
 
@@ -50,21 +51,23 @@ class TrustRegion(BaseOptimizer):
         Returns:
             d (torch.Tensor): solution step
         """
-        z = torch.zeros_like(self.x.data)
+        z = torch.zeros_like(grad_x)
         r = grad_x
         p = -r
+
         if torch.norm(r) < tol:
             return z
+        
         for _ in range(max_iter):
             # check for negative curvature
             if p @ hess_x @ p <= 0:
                 # go to boundary of trust region
-                # find tau s.t. ||z + tau p|| = delta using quadratic formula
+                # find tau s.t. ||z + tau p|| = delta using quadratic formula                
                 _a = p @ p 
                 _b = 2 * p @ z
                 _c = z @ z - delta ** 2
-                tau1 = (-_b + torch.sqrt(_b ** 2 - 4 * _a * _c)) / (2 * _a)
-                tau2 = (-_b - torch.sqrt(_b ** 2 - 4 * _a * _c)) / (2 * _a)
+                tau1, tau2 = quadratic_2D(_a, _b, _c)
+                # return positive solution
                 return z + max(tau1, tau2) * p
             
             # compute optimal step size for quadratic model in direction p
@@ -78,8 +81,8 @@ class TrustRegion(BaseOptimizer):
                 _a = p @ p 
                 _b = 2 * p @ z
                 _c = z @ z - delta ** 2
-                tau1 = (-_b + torch.sqrt(_b ** 2 - 4 * _a * _c)) / (2 * _a)
-                tau2 = (-_b - torch.sqrt(_b ** 2 - 4 * _a * _c)) / (2 * _a)
+                tau1, tau2 = quadratic_2D(_a, _b, _c)
+                # return positive solution
                 return z + max(tau1, tau2) * p
             
             # CG residual
@@ -139,18 +142,14 @@ class TrustRegion(BaseOptimizer):
             hess_cls (callable, optional): closure that recomputes the Hessian
         """ 
         x = self.x.data
-        f = fn_cls()
+        f = fn_cls(x) # disable gradient computation
 
         # build quadratic model of function
         grad_x = self.x.grad.data
         if self.model == "newton":
-            hess_x = hess_cls()
+            hess_x = hess_cls(x)
         elif self.model == "sr1":
             hess_x = self.sr1_update(x, grad_x, self.state['hess_x_prev'], self.param_groups[0]['c3'], self.state['x_prev'], self.state['grad_x_prev'])
-            # update state
-            self.state['x_prev'] = x.clone().detach()
-            self.state['grad_x_prev'] = grad_x.clone().detach()
-            self.state['hess_x_prev'] = hess_x.clone().detach()
         else:
             raise ValueError(f"Invalid model: {self.model}")
         
@@ -160,22 +159,26 @@ class TrustRegion(BaseOptimizer):
         else:
             raise ValueError(f"Invalid solver: {self.solver}")
         
-        # update x
-        x += d
-        f_trial = fn_cls()
-        md = f + grad_x @ d + 0.5 * d @ hess_x @ d
-        
         # evaluate accuracy of the model
+        f_trial = fn_cls(x + d) # disable gradient computation
+        md = f + grad_x @ d + 0.5 * d @ hess_x @ d
         rho = (f - f_trial) / (f - md)
         
         # update trust region radius
         if rho > self.param_groups[0]['c1']:
-            # accept step (do nothing)
+            # update state for hessian approximators with memory
+            if self.model == "sr1":
+                self.state['x_prev'] = x.clone()
+                self.state['grad_x_prev'] = grad_x.clone()
+                self.state['hess_x_prev'] = hess_x.clone()
+
+            # accept step
+            x += d
+
             if rho > self.param_groups[0]['c2']:
                 # increase trust
                 self.delta *= 2.0
         else:
-            # reject step
-            x -= d
+            # reject step (do nothing)
             # decrease trust
             self.delta *= 0.5
