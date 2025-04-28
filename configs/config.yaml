@@ -17,15 +17,15 @@ experiment:
   name: outputs/default
   seed: 42
   batch_size: 1
-  max_iter: 100
+  max_iter: 1000
   tol: 1e-6
   
 # Logging settings
 logging:
   level: INFO
-  save_traj: True
-  save_loss: True
-  save_grad_norm: True
-  plot_traj: True
-  plot_loss: True
-  plot_grad_norm: True
+  save_traj: False
+  save_loss: False
+  save_grad_norm: False
+  plot_traj: False
+  plot_loss: False
+  plot_grad_norm: False

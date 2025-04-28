@@ -138,11 +138,17 @@ def run_optimization(function, x, optimizer, config):
     plot_loss = config.logging.get('plot_loss', True)
     plot_grad_norm = config.logging.get('plot_grad_norm', True)
 
+    # Initialize evaluation counters
+    func_evals = 0
+    grad_evals = 0
+    hess_evals = 0
+
     x_star = function.x_soln()
     f_star = function.f_soln()
     if f_star is None:
         if x_star is not None:
             f_star = function(x_star)
+            func_evals += 1
         else:
             logger.warning("Function has no known solution, saving and plotting loss is disabled")
             save_loss = False
@@ -153,7 +159,9 @@ def run_optimization(function, x, optimizer, config):
     loss_traj = []
     grad_norm_traj = []
     f = function(x)
+    func_evals += 1
     f.backward()
+    grad_evals += 1
     initial_grad_norm = torch.max(torch.abs(x.grad)).item()
     if save_traj or plot_traj:
         traj.append(x.clone().detach().cpu().numpy())
@@ -166,10 +174,10 @@ def run_optimization(function, x, optimizer, config):
     conv_thresh = tol * max(initial_grad_norm, 1.0)
     
     # log initial state
-    logger.info(f"Starting optimization")
-    logger.info(f"Initial point: {x.tolist()}")
-    logger.info(f"Initial gradient norm: {initial_grad_norm}")
-    logger.info(f"Convergence threshold: {conv_thresh}")
+    # logger.info(f"Starting optimization")
+    # logger.info(f"Initial point: {x.tolist()}")
+    # logger.info(f"Initial gradient norm: {initial_grad_norm}")
+    # logger.info(f"Convergence threshold: {conv_thresh}")
     
     # Start timing the optimization loop
     start_time = time.time()
@@ -177,14 +185,34 @@ def run_optimization(function, x, optimizer, config):
     # optimization loop
     for i in range(max_iter):
         # step
+        def fn_wrapper(_x):
+            nonlocal func_evals
+            func_evals += 1
+            return function(_x)
+            
+        def grad_wrapper(_x):
+            nonlocal grad_evals
+            grad_evals += 1
+            optimizer.zero_grad()
+            f = function(_x)
+            f.backward()
+            return None
+            
+        def hess_wrapper(_x):
+            nonlocal hess_evals
+            hess_evals += 1
+            return hessian(function, _x)
+            
         optimizer.step(
-            fn_cls=lambda _x: function(_x), 
-            grad_cls=lambda _x: (optimizer.zero_grad(), function(_x).backward(), None)[-1],
-            hess_cls=lambda _x: hessian(function, _x)
+            fn_cls=fn_wrapper,
+            grad_cls=grad_wrapper,
+            hess_cls=hess_wrapper
         )
         optimizer.zero_grad()
         f = function(x)
+        func_evals += 1
         f.backward()
+        grad_evals += 1
 
         # compute metrics
         loss = None
@@ -199,8 +227,8 @@ def run_optimization(function, x, optimizer, config):
             grad_norm_traj.append(grad_norm)
         
         # log progress
-        if i % 10 == 0 or i == max_iter - 1:
-            logger.info(f"Iteration {i+1}/{max_iter}, Grad norm: {grad_norm:.6f}")
+        # if i % 10 == 0 or i == max_iter - 1:
+        #     logger.info(f"Iteration {i+1}/{max_iter}, Grad norm: {grad_norm:.6f}")
         
         # check convergence
         if grad_norm <= conv_thresh:
@@ -211,11 +239,15 @@ def run_optimization(function, x, optimizer, config):
     end_time = time.time()
     opt_time = end_time - start_time
     logger.info(f"Optimization loop time: {opt_time:.2f} seconds")
+    logger.info(f"Function evaluations: {func_evals}")
+    logger.info(f"Gradient evaluations: {grad_evals}")
+    logger.info(f"Hessian evaluations: {hess_evals}")
+    logger.info(f"Optimization # iterations: {i+1}")
     
     # final results
-    logger.info(f"Optimization completed")
-    logger.info(f"Final point: {x.tolist()}")
-    logger.info(f"Final gradient norm: {grad_norm:.6f}")
+    # logger.info(f"Optimization completed")
+    # logger.info(f"Final point: {x.tolist()}")
+    # logger.info(f"Final gradient norm: {grad_norm:.6f}")
         
     # create log directory
     log_path = Path(config.experiment.name)
@@ -265,13 +297,21 @@ def run_optimization(function, x, optimizer, config):
             log_dir=log_path
         )
     
-    logger.info(f"Results saved to {log_path}")
+    # logger.info(f"Results saved to {log_path}")
+    
+    return {
+        'iterations': i,
+        'func_evals': func_evals,
+        'grad_evals': grad_evals,
+        'hess_evals': hess_evals,
+        'time': opt_time
+    }
 
 
 @hydra.main(config_path="../configs", config_name="config", version_base=None)
 def main(cfg: DictConfig):
     # print the configuration
-    logger.info(f"Configuration: \n{OmegaConf.to_yaml(cfg)}")
+    # logger.info(f"Configuration: \n{OmegaConf.to_yaml(cfg)}")
     # create model
     function, x = create_function(cfg.function)
     # create optimizer
