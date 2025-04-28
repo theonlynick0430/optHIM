@@ -1,5 +1,7 @@
 from optHIM.algorithms.base import BaseOptimizer
 from optHIM.utils.solvers import quadratic_2D
+from optHIM.algorithms.bfgs import bfgs_update
+from optHIM.algorithms.dfp import dfp_update
 import torch
 
 
@@ -10,8 +12,8 @@ class TrustRegion(BaseOptimizer):
         
         Args:
             x (torch.Tensor): parameter to optimize
-            model (str, optional): type of model to approximate function
-            solver (str, optional): type of solver for trust region subproblem
+            model (str, optional): type of model to approximate function ('newton', 'sr1', 'bfgs', or 'dfp')
+            solver (str, optional): type of solver for trust region subproblem ('cg' or 'cauchy')
             delta0 (float, optional): initial trust region radius
             c1 (float, optional): lower bound for acceptance ratio (0 < c1 < c2 < 1)
             c2 (float, optional): upper bound for acceptance ratio (0 < c1 < c2 < 1)
@@ -28,8 +30,8 @@ class TrustRegion(BaseOptimizer):
         self.solver = solver
         # trust region radius
         self.delta = delta0
-        # initialize state
-        if self.model == "sr1":
+        if self.model == "sr1" or self.model == "bfgs" or self.model == "dfp":
+            # initialize state for any model with memory
             self.state = {
                 'x_prev': None,
                 'grad_x_prev': None,
@@ -150,12 +152,19 @@ class TrustRegion(BaseOptimizer):
             hess_x = hess_cls(x)
         elif self.model == "sr1":
             hess_x = self.sr1_update(x, grad_x, self.state['hess_x_prev'], self.param_groups[0]['c3'], self.state['x_prev'], self.state['grad_x_prev'])
+        elif self.model == "bfgs":
+            hess_x = bfgs_update(x, grad_x, self.state['hess_x_prev'], self.param_groups[0]['c3'], self.state['x_prev'], self.state['grad_x_prev'])
+        elif self.model == "dfp":
+            hess_x = dfp_update(x, grad_x, self.state['hess_x_prev'], self.param_groups[0]['c3'], self.state['x_prev'], self.state['grad_x_prev'])
         else:
             raise ValueError(f"Invalid model: {self.model}")
         
         # solve subproblem using model
         if self.solver == "cg":
             d = self.cg_solve(grad_x, hess_x, self.delta, self.param_groups[0]['tol'], self.param_groups[0]['max_iter'])
+        elif self.solver == "cauchy":
+            # cauchy point is the first step of CG
+            d = self.cg_solve(grad_x, hess_x, self.delta, self.param_groups[0]['tol'], 1)
         else:
             raise ValueError(f"Invalid solver: {self.solver}")
         

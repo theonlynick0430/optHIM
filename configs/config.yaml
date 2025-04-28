@@ -17,7 +17,7 @@ experiment:
   name: outputs/default
   seed: 42
   batch_size: 1
-  max_iter: 100
+  max_iter: 1000
   tol: 1e-6
   
 # Logging settings
