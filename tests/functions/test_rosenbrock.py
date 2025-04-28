@@ -1,6 +1,6 @@
 import pytest
 import torch
-from optim.functions.rosenbrock import Rosenbrock
+from optHIM.functions.rosenbrock import Rosenbrock
 
 
 class TestRosenbrock:

@@ -118,6 +118,10 @@ def create_optimizer(algorithm_config, x):
     optimizer = algorithm_cls(x, **algorithm_params)
     return optimizer
 
+def eval_no_grad(function, x):
+    with torch.no_grad():
+        return function(x)
+
 def run_optimization(function, x, optimizer, config):
     """
     Run optimization until convergence or maximum iterations.
@@ -178,7 +182,7 @@ def run_optimization(function, x, optimizer, config):
     for i in range(max_iter):
         # step
         optimizer.step(
-            fn_cls=lambda _x: function(_x), 
+            fn_cls=lambda _x: eval_no_grad(function, _x), 
             grad_cls=lambda _x: (optimizer.zero_grad(), function(_x).backward(), None)[-1],
             hess_cls=lambda _x: hessian(function, _x)
         )

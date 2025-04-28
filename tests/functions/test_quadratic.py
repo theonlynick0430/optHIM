@@ -1,6 +1,6 @@
 import pytest
 import torch
-from optim.functions.quadratic import Quadratic
+from optHIM.functions.quadratic import Quadratic
 
 
 class TestQuadratic:

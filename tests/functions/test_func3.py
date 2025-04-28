@@ -1,6 +1,6 @@
 import pytest
 import torch
-from optim.functions.func3 import Func3
+from optHIM.functions.func3 import Func3
 
 
 class TestFunc3:

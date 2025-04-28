@@ -1,6 +1,6 @@
 # OptHIM
 
-A collection of **H**ybrid **I**terative **M**ethods for optimization in PyTorch.
+A collection of **H**ybrid **I**terative **M**ethods for continuous optimization in PyTorch.
 
 
 ## Overview
@@ -9,25 +9,36 @@ This repository contains implementations of various optimization algorithms usin
 
 
 ## Available Algorithms
-Currently Released:
-- Gradient Descent (`gd.py`): classic fast first-order method 
-- Newton's Method (`newton.py`): powerful (but slower) second-order method
-- BFGS (`bfgs.py`): hybrid Quasi-Newton (approximate second-order) method
-- L-BFGS (`l-bfgs.py`): memory efficient BFGS method
-- Support for constant step size and line search via backtracking with the Armijo condition
 
-Coming Soon: 
-- DFP (`dfp.py`): hybrid Quasi-Newton (approximate second-order) method
-- TRNewtonCG (`tr_newton_cg.py`): trust region Newton method with conjugate gradient subproblem solver
-- TRSR1CG (`tr_sr1_cg.py`): SR1 Quasi-Newton method with conjugate gradient subproblem solver
-- Support for line search via backtracking with Wolfe conditions
+### Line Search Methods
+All line search methods support both Armijo backtracking and Wolfe conditions for step size selection.
+
+- **Gradient Descent** (`gd.py`): A first-order optimization method that iteratively moves in the direction of steepest descent, scaled by a step size determined through line search.
+- **Newton's Method** (`newton.py`): A second-order method that uses the Hessian matrix to compute exact Newton steps, providing quadratic convergence near optimal points.
+- **BFGS** (`bfgs.py`): A quasi-Newton method that approximates the Hessian using rank-two updates, maintaining positive definiteness while avoiding explicit Hessian computation.
+- **L-BFGS** (`lbfgs.py`): A memory-efficient variant of BFGS that stores only a limited history of updates, making it suitable for large-scale optimization problems.
+- **DFP** (`dfp.py`): A quasi-Newton method that uses a different rank-two update formula to approximate the inverse Hessian, offering an alternative to BFGS.
+
+### Trust Region Methods 
+The trust region framework (`tr.py`) supports flexible combinations of models and subproblem solvers:
+
+**Available Models:**
+- **Newton** model: Uses exact second-order information
+- **SR1** model: Symmetric Rank-One quasi-Newton approximation
+- **BFGS** model: Broyden-Fletcher-Goldfarb-Shanno quasi-Newton approximation
+- **DFP** model: Davidon-Fletcher-Powell quasi-Newton approximation
+
+**Available Subproblem Solvers:**
+- **Conjugate Gradient (CG)**: Iteratively solves the trust region subproblem
+- **Cauchy Point**: Computes an approximate solution along the steepest descent direction
+
 
 
 ## Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/optim.git
+   git clone https://github.com/theonlynick0430/optHIM
    cd optHIM
    ```
 
@@ -45,58 +56,71 @@ Coming Soon:
 
 ## Usage
 
-### Running Optimization with Different Configurations
+### Basic Usage
 
-The main script `scripts/run.py` uses Hydra for configuration management. Modify the appropriate configuration files (see more below) and run:
-
+Run optimization with default settings:
 ```bash
 python scripts/run.py
 ```
 
-### Command Line Parameter Overrides
+### Configuration Options
 
-You can override any configuration parameter directly from the command line. Here are some examples:
+The optimization can be configured through command line arguments. Here are the main categories of options:
 
-1. Change algorithm and its parameters:
+1. **Algorithm Selection and Parameters:**
 ```bash
+# Choose algorithm
+python scripts/run.py algorithm=gd
+python scripts/run.py algorithm=newton
+python scripts/run.py algorithm=bfgs
+python scripts/run.py algorithm=lbfgs
+python scripts/run.py algorithm=dfp
+python scripts/run.py algorithm=tr
+
+# Configure algorithm parameters
 python scripts/run.py algorithm=gd algorithm.step_size=0.01
 python scripts/run.py algorithm=newton algorithm.step_type=armijo
+python scripts/run.py algorithm=tr algorithm.model=newton algorithm.solver=cg
 ```
 
-2. Modify experiment settings:
+2. **Problem Selection:**
 ```bash
-python scripts/run.py experiment.name=test experiment.max_iter=200
+# Choose optimization problem
+python scripts/run.py function=quadratic
+python scripts/run.py function=rosenbrock
+python scripts/run.py function=quartic
+```
+
+3. **Experiment Settings:**
+```bash
+# Configure experiment parameters
+python scripts/run.py experiment.name=test_run
+python scripts/run.py experiment.max_iter=200
 python scripts/run.py experiment.tol=1e-8
 ```
 
-3. For machine learning tasks (using `run_ml.py`):
+4. **Combining Options:**
 ```bash
-python scripts/run_ml.py algorithm=sgd experiment.batch_size=64
-python scripts/run_ml.py algorithm=sgd algorithm.step_size=0.1 experiment.name=test_run
+# Example: Run BFGS on Rosenbrock with custom settings
+python scripts/run.py algorithm=bfgs function=rosenbrock experiment.name=bfgs_rosenbrock experiment.max_iter=500
+
+# Example: Run Trust Region with Newton model and CG solver
+python scripts/run.py algorithm=tr algorithm.model=newton algorithm.solver=cg experiment.tol=1e-6
 ```
 
-You can combine multiple overrides in a single command:
-```bash
-python scripts/run.py algorithm=gd algorithm.step_size=0.1 experiment.name=combined_test experiment.max_iter=100
-```
+### Configuration Files
 
-The command line overrides will be applied on top of the base configuration from the config files. The final configuration will be saved in the output directory specified by `experiment.name`.
-
-### Configuration Structure
-
-The configuration files are located in the `configs` directory:
+The base configurations are defined in the `configs` directory:
 - `config.yaml`: Main configuration file
-- `function/*.yaml`: Function configurations (quadratic, rosenbrock, func2, func3, etc.)
+- `function/*.yaml`: Function configurations (quadratic, rosenbrock, etc.)
 - `algorithm/*.yaml`: Algorithm configurations (gd, newton, bfgs, etc.)
 
-### Available Test Notebooks
-
-To quickly visualize different algorithms, feel free to run our test notebooks (`test/algorithms/*.ipynb`) which work out of the box with no configuration.  
+Command line arguments override the default values in these configuration files. The final configuration used in each run is saved in the output directory specified by `experiment.name`.
 
 
 ## Author
 
-Nikhil Sridhar with inspiration from Prof. Albert Berahas's MATH 562 class @ the University of Michigan. 
+Nikhil Sridhar and Sajiv Shah with inspiration from Prof. Albert Berahas's MATH 562 class @ the University of Michigan. 
 
 
 ## License
