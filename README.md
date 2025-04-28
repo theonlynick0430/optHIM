@@ -1,5 +1,7 @@
 # OptHIM
 
+![Cover Image](assets/cover.png)
+
 A collection of **H**ybrid **I**terative **M**ethods for continuous optimization in PyTorch.
 
 
