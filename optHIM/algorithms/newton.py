@@ -1,6 +1,7 @@
 import torch
 import optHIM.algorithms.ls as ls
 from optHIM.algorithms.base import BaseOptimizer
+from optHIM.utils.solvers import correct_hess
 
 
 class Newton(BaseOptimizer):
@@ -47,7 +48,7 @@ class Newton(BaseOptimizer):
         # hess x_k
         hess_x = hess_cls(x)
         # ensure PD => descent direction
-        hess_x = self.correct_hess(hess_x, self.param_groups[0]['beta'])
+        hess_x = correct_hess(hess_x, self.param_groups[0]['beta'])
         
         # compute search direction
         d = -torch.linalg.pinv(hess_x) @ grad_x
@@ -69,40 +70,3 @@ class Newton(BaseOptimizer):
             ls.wolfe(self.x, d, fn_cls, grad_cls, self.param_groups[0]['alpha'], 
                      self.param_groups[0]['alpha_high'], self.param_groups[0]['alpha_low'], 
                      self.param_groups[0]['c'], self.param_groups[0]['c1'], self.param_groups[0]['c2'])
-
-    def correct_hess(self, H, beta=1e-6, max_iter=1e2):
-        """
-        Corrects the Hessian to be positive definite.
-
-        Args:
-            H (torch.Tensor): Hessian matrix of shape (n, n)
-            beta (float): positive scalar for Hessian modification
-            max_iter (int, optional): maximum number of iterations
-
-        Returns:
-            H_hat (torch.Tensor): corrected Hessian matrix of shape (n, n)
-        """
-        # initialize eta
-        min_diag = torch.min(torch.diag(H))
-        if min_diag > 0:
-            eta = 0.0
-        else:
-            eta = -min_diag + beta
-
-        I = torch.eye(H.shape[0], device=H.device, dtype=H.dtype)
-        
-        for _ in range(int(max_iter)):
-            try:
-                # attempt Cholesky factorization
-                H_hat = H + eta * I
-                torch.linalg.cholesky(H_hat)
-                # break if successful
-                break
-            except RuntimeError:
-                # if factorization fails, increase eta
-                if eta >= beta:
-                    break
-                else:
-                    eta = max(2 * eta, beta)
-        
-        return H_hat

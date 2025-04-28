@@ -6,7 +6,7 @@ import torch
 
 
 class TrustRegion(BaseOptimizer):
-    def __init__(self, x, model="sr1", solver="cg", delta0=1.0, c1=0.25, c2=0.75, c3=1e-6, tol=1e-6, max_iter=1e2):
+    def __init__(self, x, model="sr1", solver="cg", delta0=1.0, min_delta=1e-6, max_delta=1e2, c1=0.25, c2=0.75, c3=1e-6, tol=1e-6, max_iter=1e2):
         """
         Implements trust region method.
         
@@ -15,6 +15,8 @@ class TrustRegion(BaseOptimizer):
             model (str, optional): type of model to approximate function ('newton', 'sr1', 'bfgs', or 'dfp')
             solver (str, optional): type of solver for trust region subproblem ('cg' or 'cauchy')
             delta0 (float, optional): initial trust region radius
+            min_delta (float, optional): minimum trust region radius
+            max_delta (float, optional): maximum trust region radius
             c1 (float, optional): lower bound for acceptance ratio (0 < c1 < c2 < 1)
             c2 (float, optional): upper bound for acceptance ratio (0 < c1 < c2 < 1)
             c3 (float, optional): skip sr1 update unless ||(y-Bs)^T s|| >= c3 ||y-Bs|| ||s||
@@ -23,7 +25,7 @@ class TrustRegion(BaseOptimizer):
         """
         if not (0 < c1 < c2 < 1):
             raise ValueError("c1 and c2 must satisfy 0 < c1 < c2 < 1")
-        defaults = dict(c1=c1, c2=c2, c3=c3, tol=tol, max_iter=max_iter)
+        defaults = dict(min_delta=min_delta, max_delta=max_delta, c1=c1, c2=c2, c3=c3, tol=tol, max_iter=max_iter)
         super(TrustRegion, self).__init__([x], defaults)
         self.x = x
         self.model = model
@@ -171,12 +173,13 @@ class TrustRegion(BaseOptimizer):
         # evaluate accuracy of the model
         f_trial = fn_cls(x + d) # disable gradient computation
         md = f + grad_x @ d + 0.5 * d @ hess_x @ d
-        rho = (f - f_trial) / (f - md)
-        
+        # safe guard for division by zero
+        rho = self.param_groups[0]['c2'] + 1.0 if f - md < 1e-6 else (f - f_trial) / (f - md)
+
         # update trust region radius
         if rho > self.param_groups[0]['c1']:
             # update state for hessian approximators with memory
-            if self.model == "sr1":
+            if self.model == "sr1" or self.model == "bfgs" or self.model == "dfp":
                 self.state['x_prev'] = x.clone()
                 self.state['grad_x_prev'] = grad_x.clone()
                 self.state['hess_x_prev'] = hess_x.clone()
@@ -191,3 +194,6 @@ class TrustRegion(BaseOptimizer):
             # reject step (do nothing)
             # decrease trust
             self.delta *= 0.5
+
+        # clip trust region radius
+        self.delta = max(self.param_groups[0]['min_delta'], min(self.param_groups[0]['max_delta'], self.delta))

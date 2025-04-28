@@ -5,6 +5,8 @@ _target_: optHIM.algorithms.tr.TrustRegion
 model:     newton   # Type of model: newton, sr1, bfgs, dfp
 solver:    cg       # Type of solver: cg, cauchy
 delta0:    1.0      # Initial trust region radius
+min_delta: 1e-6     # Minimum trust region radius
+max_delta: 1e2      # Maximum trust region radius
 c1:        0.25     # Lower bound for acceptance ratio (0 < c1 < c2 < 1)
 c2:        0.75     # Upper bound for acceptance ratio (0 < c1 < c2 < 1)
 c3:        1e-6     # Skip sr1 update unless ||(y-Bs)^T s|| >= c3 ||y-Bs|| ||s||

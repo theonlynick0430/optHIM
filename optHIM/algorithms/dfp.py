@@ -31,7 +31,7 @@ def dfp_update(x, grad_x, hess_x_prev, eps_sy, x_prev=None, grad_x_prev=None):
             rho = 1.0 / curv_cond
             term1 = (I - rho * torch.outer(y, s)) @ hess_x_prev @ (I - rho * torch.outer(s, y))
             term2 = rho * torch.outer(y, y)
-            hess_x = hess_x_prev + term1 + term2
+            hess_x = term1 + term2
     return hess_x
 
 def dfp_update_inv(x, grad_x, inv_hess_x_prev, eps_sy, x_prev=None, grad_x_prev=None):

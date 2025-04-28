@@ -9,7 +9,7 @@ import logging
 import numpy as np
 import torch
 import hydra
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig, ListConfig, OmegaConf
 from pathlib import Path
 import optHIM.utils.plot as plot_utils
 import time
@@ -76,7 +76,11 @@ def create_function(function_config):
     """
     # extract function class and parameters
     function_cls = hydra.utils.get_class(function_config._target_)
-    function_params = {k: v for k, v in function_config.items() if not k.startswith('_')}
+    function_params = {
+        k: torch.tensor(v, dtype=torch.float32) if isinstance(v, (list, ListConfig)) else v 
+        for k, v in function_config.items() if not k.startswith('_')
+    }
+    print(f"function_params: {function_params}")
     
     # get initial point based on function type and parameters
     initial_point = get_initial_point(function_config._target_, function_params)
@@ -94,8 +98,7 @@ def create_function(function_config):
         function_params['initial_point'] = initial_point
     
     # remove initial_point from function parameters if present
-    initial_point = torch.tensor(function_params.pop('initial_point', None), 
-                               dtype=torch.float32, requires_grad=True)
+    initial_point = function_params.pop('initial_point', None).requires_grad_(True)
     
     # create function instance
     return function_cls(**function_params), initial_point
