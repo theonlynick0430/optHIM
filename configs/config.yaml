@@ -7,16 +7,15 @@ defaults:
 
 hydra:
   run:
-    dir: ${experiment.name}
+    dir: outputs/${experiment.name}
   sweep:
-    dir: ${experiment.name}
+    dir: outputs/${experiment.name}
     subdir: ""
 
 # Experiment settings
 experiment:
-  name: outputs/default
+  name: default
   seed: 42
-  batch_size: 1
   max_iter: 1000
   tol: 1e-6
   

@@ -145,6 +145,11 @@ def run_optimization(function, x, optimizer, config):
     plot_loss = config.logging.get('plot_loss', True)
     plot_grad_norm = config.logging.get('plot_grad_norm', True)
 
+    # Initialize evaluation counters
+    fn_evals = 0
+    grad_evals = 0
+    hess_evals = 0
+
     x_star = function.x_soln()
     f_star = function.f_soln()
     if f_star is None:
@@ -160,7 +165,9 @@ def run_optimization(function, x, optimizer, config):
     loss_traj = []
     grad_norm_traj = []
     f = function(x)
+    fn_evals += 1
     f.backward()
+    grad_evals += 1
     initial_grad_norm = torch.max(torch.abs(x.grad)).item()
     if save_traj or plot_traj:
         traj.append(x.clone().detach().cpu().numpy())
@@ -181,17 +188,36 @@ def run_optimization(function, x, optimizer, config):
     # Start timing the optimization loop
     start_time = time.time()
     
+    # Define closures with counters
+    def fn_closure(_x):
+        nonlocal fn_evals
+        fn_evals += 1
+        return eval_no_grad(function, _x)
+    
+    def grad_closure(_x):
+        nonlocal grad_evals
+        grad_evals += 1
+        optimizer.zero_grad()
+        function(_x).backward()
+    
+    def hess_closure(_x):
+        nonlocal hess_evals
+        hess_evals += 1
+        return hessian(function, _x)
+    
     # optimization loop
     for i in range(max_iter):
         # step
         optimizer.step(
-            fn_cls=lambda _x: eval_no_grad(function, _x), 
-            grad_cls=lambda _x: (optimizer.zero_grad(), function(_x).backward(), None)[-1],
-            hess_cls=lambda _x: hessian(function, _x)
+            fn_cls=fn_closure,
+            grad_cls=grad_closure,
+            hess_cls=hess_closure
         )
         optimizer.zero_grad()
         f = function(x)
+        fn_evals += 1
         f.backward()
+        grad_evals += 1
 
         # compute metrics
         loss = None
@@ -223,9 +249,12 @@ def run_optimization(function, x, optimizer, config):
     logger.info(f"Optimization completed")
     logger.info(f"Final point: {x.tolist()}")
     logger.info(f"Final gradient norm: {grad_norm:.6f}")
+    logger.info(f"Function evaluations: {fn_evals}")
+    logger.info(f"Gradient evaluations: {grad_evals}")
+    logger.info(f"Hessian evaluations: {hess_evals}")
         
     # create log directory
-    log_path = Path(config.experiment.name)
+    log_path = Path("outputs") / config.experiment.name
     log_path.mkdir(parents=True, exist_ok=True)
     # save configuration
     with open(log_path / 'config.yaml', 'w') as f:
