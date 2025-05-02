@@ -18,6 +18,7 @@ experiment:
   seed: 42
   max_iter: 1000
   tol: 1e-6
+  device: cpu
   
 # Logging settings
 logging:

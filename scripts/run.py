@@ -29,39 +29,36 @@ def get_initial_point(target, function_params=None):
         function_params (dict, optional): function parameters including data file
         
     Returns:
-        list or None: initial point coordinates
+        initial_point (torch.Tensor): point to start optimization at
     """
     # First check if this is a quadratic function
     if 'quadratic' in target.lower():
         if function_params and 'data_file' in function_params:
             data_file = function_params['data_file']
+            rng = np.random.default_rng(0)
             if 'P1_quad_10_10' in data_file:
-                rng = np.random.default_rng(0)
-                return (20 * rng.random(10) - 10).tolist()
+                return torch.tensor(20 * rng.random(size=10) - 10, dtype=torch.float32)
             elif 'P2_quad_10_1000' in data_file:
-                rng = np.random.default_rng(0)
-                return (20 * rng.random(10) - 10).tolist()
+                return torch.tensor(20 * rng.random(size=10) - 10, dtype=torch.float32)
             elif 'P3_quad_1000_10' in data_file:
-                rng = np.random.default_rng(0)
-                return (20 * rng.random(1000) - 10).tolist()
+                return torch.tensor(20 * rng.random(size=1000) - 10, dtype=torch.float32)
             elif 'P4_quad_1000_1000' in data_file:
-                rng = np.random.default_rng(0)
-                return (20 * rng.random(1000) - 10).tolist()
+                return torch.tensor(20 * rng.random(size=1000) - 10, dtype=torch.float32)
     
     # Handle other function types
     if 'quartic_1' in target or 'quartic_2' in target:
-        return [np.cos(np.deg2rad(70)), np.sin(np.deg2rad(70)), 
-                np.cos(np.deg2rad(70)), np.sin(np.deg2rad(70))]
+        return torch.tensor([np.cos(np.deg2rad(70)), np.sin(np.deg2rad(70)), 
+                           np.cos(np.deg2rad(70)), np.sin(np.deg2rad(70))], dtype=torch.float32)
     elif 'rosenbrock_2' in target:
-        return [-1.2, 1.0]
+        return torch.tensor([-1.2, 1.0], dtype=torch.float32)
     elif 'rosenbrock_100' in target:
-        return [-1.2] + [1.0] * 99
+        return torch.tensor([-1.2] + [1.0] * 99, dtype=torch.float32)
     elif 'exponential_10' in target:
-        return [1.0] + [0.0] * 9
+        return torch.tensor([1.0] + [0.0] * 9, dtype=torch.float32)
     elif 'exponential_1000' in target:
-        return [1.0] + [0.0] * 999
+        return torch.tensor([1.0] + [0.0] * 999, dtype=torch.float32)
     elif 'genhumps_5' in target:
-        return [-506.2] + [506.2] * 4
+        return torch.tensor([-506.2] + [506.2] * 4, dtype=torch.float32)
     return None
 
 def create_function(function_config):
@@ -82,26 +79,29 @@ def create_function(function_config):
     }
     print(f"function_params: {function_params}")
     
-    # get initial point based on function type and parameters
-    initial_point = get_initial_point(function_config._target_, function_params)
-    
     # load function parameters from data file if specified
     if 'data_file' in function_params:
         data = np.load(function_params['data_file'], allow_pickle=True).item()
         for key, value in data.items():
             data[key] = torch.tensor(value, dtype=torch.float32)
         function_params.update(data)
+    
+    # get initial point based on function type and parameters
+    initial_point = get_initial_point(function_config._target_, function_params)
+    if initial_point is None:
+        initial_point = function_params['initial_point']
+    initial_point.to(device)
+    initial_point.requires_grad_(True)
+
+    if 'data_file' in function_params:
         del function_params['data_file']
+    if 'initial_point' in function_params:
+        del function_params['initial_point']
     
-    # set the initial point if we determined one
-    if initial_point is not None:
-        function_params['initial_point'] = initial_point
-    
-    # remove initial_point from function parameters if present
-    initial_point = function_params.pop('initial_point', None).requires_grad_(True)
-    
-    # create function instance
-    return function_cls(**function_params), initial_point
+    # create function instance and move to device
+    function = function_cls(**function_params)
+    function.to(device)
+    return function, initial_point
 
 def create_optimizer(algorithm_config, x):
     """
@@ -306,6 +306,11 @@ def run_optimization(function, x, optimizer, config):
 
 @hydra.main(config_path="../configs", config_name="config", version_base=None)
 def main(cfg: DictConfig):
+    # set up device
+    global device
+    device = torch.device(cfg.experiment.device if torch.cuda.is_available() and cfg.experiment.device == "cuda" else "cpu")
+    logger.info(f"Using device: {device}")
+    
     # print the configuration
     logger.info(f"Configuration: \n{OmegaConf.to_yaml(cfg)}")
     # create model
