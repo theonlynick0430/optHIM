@@ -26,6 +26,7 @@ logging:
   save_traj: True
   save_loss: True
   save_grad_norm: True
+  save_metrics: True
   plot_traj: True
   plot_loss: True
   plot_grad_norm: True

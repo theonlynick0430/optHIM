@@ -31,7 +31,7 @@ def get_initial_point(target, function_params=None):
     Returns:
         initial_point (torch.Tensor): point to start optimization at
     """
-    # First check if this is a quadratic function
+    # first check if this is a quadratic function
     if 'quadratic' in target.lower():
         if function_params and 'data_file' in function_params:
             data_file = function_params['data_file']
@@ -45,7 +45,7 @@ def get_initial_point(target, function_params=None):
             elif 'P4_quad_1000_1000' in data_file:
                 return torch.tensor(20 * rng.random(size=1000) - 10, dtype=torch.float32)
     
-    # Handle other function types
+    # handle other function types
     if 'quartic_1' in target or 'quartic_2' in target:
         return torch.tensor([np.cos(np.deg2rad(70)), np.sin(np.deg2rad(70)), 
                            np.cos(np.deg2rad(70)), np.sin(np.deg2rad(70))], dtype=torch.float32)
@@ -141,11 +141,12 @@ def run_optimization(function, x, optimizer, config):
     save_traj = config.logging.get('save_traj', True)
     save_loss = config.logging.get('save_loss', True)
     save_grad_norm = config.logging.get('save_grad_norm', True)
+    save_metrics = config.logging.get('save_metrics', True)
     plot_traj = config.logging.get('plot_traj', True)
     plot_loss = config.logging.get('plot_loss', True)
     plot_grad_norm = config.logging.get('plot_grad_norm', True)
 
-    # Initialize evaluation counters
+    # initialize evaluation counters
     fn_evals = 0
     grad_evals = 0
     hess_evals = 0
@@ -184,11 +185,11 @@ def run_optimization(function, x, optimizer, config):
     logger.info(f"Initial point: {x.tolist()}")
     logger.info(f"Initial gradient norm: {initial_grad_norm}")
     logger.info(f"Convergence threshold: {conv_thresh}")
-    
-    # Start timing the optimization loop
+
+    # start timing the optimization loop
     start_time = time.time()
     
-    # Define closures with counters
+    # define closures with counters
     def fn_closure(_x):
         nonlocal fn_evals
         fn_evals += 1
@@ -240,7 +241,7 @@ def run_optimization(function, x, optimizer, config):
             logger.info(f"Converged at iteration {i+1} with gradient norm {grad_norm:.6f} <= {conv_thresh:.6f}")
             break
     
-    # End timing the optimization loop
+    # end timing the optimization loop
     end_time = time.time()
     opt_time = end_time - start_time
     logger.info(f"Optimization loop time: {opt_time:.2f} seconds")
@@ -252,10 +253,24 @@ def run_optimization(function, x, optimizer, config):
     logger.info(f"Function evaluations: {fn_evals}")
     logger.info(f"Gradient evaluations: {grad_evals}")
     logger.info(f"Hessian evaluations: {hess_evals}")
-        
+    
     # create log directory
     log_path = Path("outputs") / config.experiment.name
     log_path.mkdir(parents=True, exist_ok=True)
+    
+    # save metrics if enabled
+    if save_metrics:
+        metrics = {
+            'iterations': i + 1,  # +1 because we start counting from 0
+            'function_evals': fn_evals,
+            'grad_evals': grad_evals,
+            'hess_evals': hess_evals,
+            'time': opt_time,
+            'final_grad_norm': grad_norm,
+            'converged': grad_norm <= conv_thresh
+        }
+        np.save(log_path / 'metrics.npy', metrics)
+    
     # save configuration
     with open(log_path / 'config.yaml', 'w') as f:
         f.write(OmegaConf.to_yaml(config))
