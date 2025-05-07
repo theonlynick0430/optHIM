@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Define arrays of algorithms and functions
-algorithms=("gd" "newton" "bfgs" "lbfgs" "dfp" "tr")
+# Define arrays of models, solvers, and functions
+models=("sr1" "newton" "bfgs" "dfp")
+solvers=("cg" "cauchy")
 functions=(
     "P1_quad_10_10"
     "P2_quad_10_1000"
@@ -17,17 +18,19 @@ functions=(
 )
 
 # Loop through all combinations
-for algo in "${algorithms[@]}"; do
-    for func in "${functions[@]}"; do
-        # Create experiment name
-        exp_name="${algo}-${func}"
-        
-        # Run the experiment
-        echo "Running experiment: ${exp_name}"
-        python scripts/run.py function=${func} algorithm=${algo} experiment.name=${exp_name}
-        
-        # Add a small delay to prevent overwhelming the system
-        sleep 1
+for model in "${models[@]}"; do
+    for solver in "${solvers[@]}"; do
+        for func in "${functions[@]}"; do
+            # Create experiment name
+            exp_name="tr-${model}-${solver}-${func}"
+            
+            # Run the experiment
+            echo "Running experiment: ${exp_name}"
+            python scripts/run.py algorithm=tr algorithm.model=${model} algorithm.solver=${solver} function=${func} experiment.name=${exp_name}
+            
+            # Add a small delay to prevent overwhelming the system
+            sleep 1
+        done
     done
 done
 
