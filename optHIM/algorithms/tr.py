@@ -130,8 +130,8 @@ class TrustRegion(BaseOptimizer):
             # y_{k-1} = grad x_k - grad x_{k-1}
             y = grad_x - grad_x_prev
             vec = y - hess_x_prev @ s
-            if torch.norm(vec @ s) >= c3 * torch.norm(vec) * torch.norm(s):
-                # update hess_x if ||(y-Bs)^T s|| >= c3 ||y-Bs|| ||s||
+            if vec @ s >= c3 * torch.norm(vec) * torch.norm(s):
+                # update hess_x if |(y-Bs)^T s| >= c3 ||y-Bs|| ||s||
                 hess_x = hess_x_prev + torch.outer(vec, vec) / (vec @ s)
         
         return hess_x
